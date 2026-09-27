@@ -1,0 +1,1 @@
+UPDATE public.spots SET position_y = position_y - 0.8 WHERE position_y IS NOT NULL AND position_y > 1.95;

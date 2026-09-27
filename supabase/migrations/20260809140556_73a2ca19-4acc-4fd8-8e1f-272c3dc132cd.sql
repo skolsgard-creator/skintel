@@ -1,0 +1,2 @@
+COMMENT ON TABLE public.lesion_reviews IS 'Obligatorisk hudläkargranskning av inskickade hudförändringar (pilot).';
+COMMENT ON TABLE public.dermatologists IS 'Manuellt underhållen lista över aktiva granskande hudläkare.';

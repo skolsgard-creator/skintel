@@ -1,0 +1,95 @@
+# Advisor-baslinje
+
+Ögonblicksbild av `supabase db advisors` efter migration 20260907090000
+(notis-outboxen + REVOKE-rättningen). Projekt: npaktlkeqsugckubccbn.
+
+SYFTET ÄR ATT NÄSTA ÄNDRING SKA GÅ ATT JÄMFÖRA I STÄLLET FÖR ATT TOLKAS.
+När granskningskön applicerades fanns ingen baslinje, och uppdelningen i
+"mitt" och "befintligt" fick göras på objektnamn. Det höll den gången och
+är inte en metod. Kör om filen efter varje migration och läs diffen:
+
+  npx supabase db advisors --linked --type all
+
+Raderna är sorterade på nivå, regel och text, så att en diff visar vad som
+faktiskt tillkommit och inte att ordningen råkade ändras.
+
+Ingenting här är okänt eller oavsiktligt vid tidpunkten för filen:
+
+  security_definer_view (2)  review_queue och case_reviewer. Avsiktliga.
+      Uppdelningen metadata-i-kön mot bild-vid-antagande går inte att uttrycka
+      som en radpolicy -- se filhuvudet i 20260906090000. case_reviewer finns
+      för att patienten ska se granskarens namn utan en policy på
+      public.dermatologists -- se 20260906160000.
+
+  *_security_definer_function_executable  Linten träffar varje SECURITY
+      DEFINER-funktion som är anropbar av en roll. Det är hela RPC-designen:
+      granskarwebben ska nå kön, antagandet och bilddörren utan den här appens
+      middleware. Var och en kontrollerar sin egen behörighet internt.
+      request_case_image tillkom med 20260906200000. is_review_reviewer är
+      från 20260826151125 och är den enda som är nåbar för anon.
+
+  auth_rls_initplan (23)  Prestanda, gäller i princip varje policy i schemat
+      inklusive de från augusti. Egen svepning, se KNOWN_ISSUES.md.
+
+  multiple_permissive_policies  Följd av att tabeller nu har mer än en
+      SELECT-policy. Avsikten.
+
+  auth_leaked_password_protection  Inställning i Supabase-dashboarden,
+      orörd av det här arbetet.
+
+## Sammanfattning
+
+TOTALT 44
+    1  anon_security_definer_function_executable
+    1  auth_leaked_password_protection
+   23  auth_rls_initplan
+   13  authenticated_security_definer_function_executable
+    4  multiple_permissive_policies
+    2  security_definer_view
+
+## Fynd
+
+ERROR  security_definer_view  ::  View `public.case_reviewer` is defined with the SECURITY DEFINER property
+ERROR  security_definer_view  ::  View `public.review_queue` is defined with the SECURITY DEFINER property
+WARN   anon_security_definer_function_executable  ::  Function `public.is_review_reviewer(_user_id uuid, _review_id uuid)` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/is_review_reviewer`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.
+WARN   auth_leaked_password_protection  ::  Supabase Auth prevents the use of compromised passwords by checking against HaveIBeenPwned.org. Enable this feature to enhance security.
+WARN   auth_rls_initplan  ::  Table `public.conversations` has a row level security policy `admin reads kundservice conversations` that re-evaluates current_setting() or auth.<function>() for each row. This produces suboptimal query performance at scale. Resolve the issue by replacing `auth.<function>()` with `(select auth.<function>())`. See [docs](https://supabase.com/docs/guides/database/postgres/row-level-security#call-functions-with-select) for more info.
+WARN   auth_rls_initplan  ::  Table `public.conversations` has a row level security policy `hr admin reads own org arbetsgivare conversations` that re-evaluates current_setting() or auth.<function>() for each row. This produces suboptimal query performance at scale. Resolve the issue by replacing `auth.<function>()` with `(select auth.<function>())`. See [docs](https://supabase.com/docs/guides/database/postgres/row-level-security#call-functions-with-select) for more info.
+WARN   auth_rls_initplan  ::  Table `public.conversations` has a row level security policy `patient reads own arbetsgivare conversations` that re-evaluates current_setting() or auth.<function>() for each row. This produces suboptimal query performance at scale. Resolve the issue by replacing `auth.<function>()` with `(select auth.<function>())`. See [docs](https://supabase.com/docs/guides/database/postgres/row-level-security#call-functions-with-select) for more info.
+WARN   auth_rls_initplan  ::  Table `public.conversations` has a row level security policy `patient reads own dermatolog conversations` that re-evaluates current_setting() or auth.<function>() for each row. This produces suboptimal query performance at scale. Resolve the issue by replacing `auth.<function>()` with `(select auth.<function>())`. See [docs](https://supabase.com/docs/guides/database/postgres/row-level-security#call-functions-with-select) for more info.
+WARN   auth_rls_initplan  ::  Table `public.conversations` has a row level security policy `patient reads own kundservice conversations` that re-evaluates current_setting() or auth.<function>() for each row. This produces suboptimal query performance at scale. Resolve the issue by replacing `auth.<function>()` with `(select auth.<function>())`. See [docs](https://supabase.com/docs/guides/database/postgres/row-level-security#call-functions-with-select) for more info.
+WARN   auth_rls_initplan  ::  Table `public.conversations` has a row level security policy `reviewer reads assigned dermatolog conversations` that re-evaluates current_setting() or auth.<function>() for each row. This produces suboptimal query performance at scale. Resolve the issue by replacing `auth.<function>()` with `(select auth.<function>())`. See [docs](https://supabase.com/docs/guides/database/postgres/row-level-security#call-functions-with-select) for more info.
+WARN   auth_rls_initplan  ::  Table `public.dermatologists` has a row level security policy `own dermatologist row` that re-evaluates current_setting() or auth.<function>() for each row. This produces suboptimal query performance at scale. Resolve the issue by replacing `auth.<function>()` with `(select auth.<function>())`. See [docs](https://supabase.com/docs/guides/database/postgres/row-level-security#call-functions-with-select) for more info.
+WARN   auth_rls_initplan  ::  Table `public.lesion_reviews` has a row level security policy `own review read` that re-evaluates current_setting() or auth.<function>() for each row. This produces suboptimal query performance at scale. Resolve the issue by replacing `auth.<function>()` with `(select auth.<function>())`. See [docs](https://supabase.com/docs/guides/database/postgres/row-level-security#call-functions-with-select) for more info.
+WARN   auth_rls_initplan  ::  Table `public.lesion_reviews` has a row level security policy `reviewer reads claimed review` that re-evaluates current_setting() or auth.<function>() for each row. This produces suboptimal query performance at scale. Resolve the issue by replacing `auth.<function>()` with `(select auth.<function>())`. See [docs](https://supabase.com/docs/guides/database/postgres/row-level-security#call-functions-with-select) for more info.
+WARN   auth_rls_initplan  ::  Table `public.messages` has a row level security policy `admin reads kundservice messages` that re-evaluates current_setting() or auth.<function>() for each row. This produces suboptimal query performance at scale. Resolve the issue by replacing `auth.<function>()` with `(select auth.<function>())`. See [docs](https://supabase.com/docs/guides/database/postgres/row-level-security#call-functions-with-select) for more info.
+WARN   auth_rls_initplan  ::  Table `public.messages` has a row level security policy `hr admin reads own org arbetsgivare messages` that re-evaluates current_setting() or auth.<function>() for each row. This produces suboptimal query performance at scale. Resolve the issue by replacing `auth.<function>()` with `(select auth.<function>())`. See [docs](https://supabase.com/docs/guides/database/postgres/row-level-security#call-functions-with-select) for more info.
+WARN   auth_rls_initplan  ::  Table `public.messages` has a row level security policy `patient reads own arbetsgivare messages` that re-evaluates current_setting() or auth.<function>() for each row. This produces suboptimal query performance at scale. Resolve the issue by replacing `auth.<function>()` with `(select auth.<function>())`. See [docs](https://supabase.com/docs/guides/database/postgres/row-level-security#call-functions-with-select) for more info.
+WARN   auth_rls_initplan  ::  Table `public.messages` has a row level security policy `patient reads own dermatolog messages` that re-evaluates current_setting() or auth.<function>() for each row. This produces suboptimal query performance at scale. Resolve the issue by replacing `auth.<function>()` with `(select auth.<function>())`. See [docs](https://supabase.com/docs/guides/database/postgres/row-level-security#call-functions-with-select) for more info.
+WARN   auth_rls_initplan  ::  Table `public.messages` has a row level security policy `patient reads own kundservice messages` that re-evaluates current_setting() or auth.<function>() for each row. This produces suboptimal query performance at scale. Resolve the issue by replacing `auth.<function>()` with `(select auth.<function>())`. See [docs](https://supabase.com/docs/guides/database/postgres/row-level-security#call-functions-with-select) for more info.
+WARN   auth_rls_initplan  ::  Table `public.messages` has a row level security policy `reviewer reads assigned dermatolog messages` that re-evaluates current_setting() or auth.<function>() for each row. This produces suboptimal query performance at scale. Resolve the issue by replacing `auth.<function>()` with `(select auth.<function>())`. See [docs](https://supabase.com/docs/guides/database/postgres/row-level-security#call-functions-with-select) for more info.
+WARN   auth_rls_initplan  ::  Table `public.organization_invites` has a row level security policy `hr admin reads own org invites` that re-evaluates current_setting() or auth.<function>() for each row. This produces suboptimal query performance at scale. Resolve the issue by replacing `auth.<function>()` with `(select auth.<function>())`. See [docs](https://supabase.com/docs/guides/database/postgres/row-level-security#call-functions-with-select) for more info.
+WARN   auth_rls_initplan  ::  Table `public.organization_members` has a row level security policy `read own membership` that re-evaluates current_setting() or auth.<function>() for each row. This produces suboptimal query performance at scale. Resolve the issue by replacing `auth.<function>()` with `(select auth.<function>())`. See [docs](https://supabase.com/docs/guides/database/postgres/row-level-security#call-functions-with-select) for more info.
+WARN   auth_rls_initplan  ::  Table `public.organizations` has a row level security policy `members read own organization` that re-evaluates current_setting() or auth.<function>() for each row. This produces suboptimal query performance at scale. Resolve the issue by replacing `auth.<function>()` with `(select auth.<function>())`. See [docs](https://supabase.com/docs/guides/database/postgres/row-level-security#call-functions-with-select) for more info.
+WARN   auth_rls_initplan  ::  Table `public.profiles` has a row level security policy `own profile` that re-evaluates current_setting() or auth.<function>() for each row. This produces suboptimal query performance at scale. Resolve the issue by replacing `auth.<function>()` with `(select auth.<function>())`. See [docs](https://supabase.com/docs/guides/database/postgres/row-level-security#call-functions-with-select) for more info.
+WARN   auth_rls_initplan  ::  Table `public.scans` has a row level security policy `own scans read` that re-evaluates current_setting() or auth.<function>() for each row. This produces suboptimal query performance at scale. Resolve the issue by replacing `auth.<function>()` with `(select auth.<function>())`. See [docs](https://supabase.com/docs/guides/database/postgres/row-level-security#call-functions-with-select) for more info.
+WARN   auth_rls_initplan  ::  Table `public.spots` has a row level security policy `own spots insert` that re-evaluates current_setting() or auth.<function>() for each row. This produces suboptimal query performance at scale. Resolve the issue by replacing `auth.<function>()` with `(select auth.<function>())`. See [docs](https://supabase.com/docs/guides/database/postgres/row-level-security#call-functions-with-select) for more info.
+WARN   auth_rls_initplan  ::  Table `public.spots` has a row level security policy `own spots read` that re-evaluates current_setting() or auth.<function>() for each row. This produces suboptimal query performance at scale. Resolve the issue by replacing `auth.<function>()` with `(select auth.<function>())`. See [docs](https://supabase.com/docs/guides/database/postgres/row-level-security#call-functions-with-select) for more info.
+WARN   auth_rls_initplan  ::  Table `public.user_roles` has a row level security policy `read own roles` that re-evaluates current_setting() or auth.<function>() for each row. This produces suboptimal query performance at scale. Resolve the issue by replacing `auth.<function>()` with `(select auth.<function>())`. See [docs](https://supabase.com/docs/guides/database/postgres/row-level-security#call-functions-with-select) for more info.
+WARN   authenticated_security_definer_function_executable  ::  Function `public.answer_insufficient_images(_review_id uuid)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/answer_insufficient_images`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.
+WARN   authenticated_security_definer_function_executable  ::  Function `public.claim_lesion_review(_review_id uuid)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/claim_lesion_review`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.
+WARN   authenticated_security_definer_function_executable  ::  Function `public.has_role(_user_id uuid, _role public.app_role)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/has_role`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.
+WARN   authenticated_security_definer_function_executable  ::  Function `public.is_org_admin(_user_id uuid, _org_id uuid)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/is_org_admin`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.
+WARN   authenticated_security_definer_function_executable  ::  Function `public.is_review_reviewer(_user_id uuid, _review_id uuid)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/is_review_reviewer`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.
+WARN   authenticated_security_definer_function_executable  ::  Function `public.org_role_of(_user_id uuid, _org_id uuid)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/org_role_of`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.
+WARN   authenticated_security_definer_function_executable  ::  Function `public.redeem_organization_invite(_code text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/redeem_organization_invite`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.
+WARN   authenticated_security_definer_function_executable  ::  Function `public.release_lesion_review(_review_id uuid)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/release_lesion_review`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.
+WARN   authenticated_security_definer_function_executable  ::  Function `public.request_case_image(_review_id uuid)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/request_case_image`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.
+WARN   authenticated_security_definer_function_executable  ::  Function `public.reviewer_holds_spot(_spot_id uuid)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/reviewer_holds_spot`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.
+WARN   authenticated_security_definer_function_executable  ::  Function `public.reviewer_session_ok()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/reviewer_session_ok`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.
+WARN   authenticated_security_definer_function_executable  ::  Function `public.reviewer_session_status()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/reviewer_session_status`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.
+WARN   authenticated_security_definer_function_executable  ::  Function `public.submit_review_verdict(_review_id uuid, _risk_level text, _verdict text, _assessed_skin_type text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/submit_review_verdict`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.
+WARN   multiple_permissive_policies  ::  Table `public.conversations` has multiple permissive policies for role `authenticated` for action `SELECT`. Policies include `{"admin reads kundservice conversations","hr admin reads own org arbetsgivare conversations","patient reads own arbetsgivare conversations","patient reads own dermatolog conversations","patient reads own kundservice conversations","reviewer reads assigned dermatolog conversations"}`
+WARN   multiple_permissive_policies  ::  Table `public.lesion_reviews` has multiple permissive policies for role `authenticated` for action `SELECT`. Policies include `{"own review read","reviewer reads claimed review"}`
+WARN   multiple_permissive_policies  ::  Table `public.messages` has multiple permissive policies for role `authenticated` for action `SELECT`. Policies include `{"admin reads kundservice messages","hr admin reads own org arbetsgivare messages","patient reads own arbetsgivare messages","patient reads own dermatolog messages","patient reads own kundservice messages","reviewer reads assigned dermatolog messages"}`
+WARN   multiple_permissive_policies  ::  Table `public.spots` has multiple permissive policies for role `authenticated` for action `SELECT`. Policies include `{"own spots read","reviewer reads spot of claimed case"}`

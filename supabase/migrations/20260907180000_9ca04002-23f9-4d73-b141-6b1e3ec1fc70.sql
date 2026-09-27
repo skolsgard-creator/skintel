@@ -1,0 +1,34 @@
+-- Kroppstypen bort ur datamodellen.
+--
+-- VARFÖR KOLUMNEN INTE HADE NÅGON KONSUMENT
+--
+-- profiles.body_type kom in med 20260807140125 och styrde en enda sak:
+-- bodyTypeById(bodyType).scale i BasemeshBody.tsx -- en skalfaktor
+-- ([0.86,1.04,0.86] / [1,1,1] / [1.2,0.97,1.2]) på samma mesh. Den låg
+-- INTE i ANAMNESIS_FIELDS, alltså inte i den frysta anamnesen som följer med
+-- ett ärende, och den fanns inte i review_queue -- granskaren ser region_key,
+-- body_side och body_location. Kolumnen nådde alltså aldrig någon som skulle
+-- bedöma något.
+--
+-- Och den bad användaren kategorisera sin egen kropp som "smal", "neutral"
+-- eller "kraftig" i en hälsoapp. Det är inte gratis, och priset betalades för
+-- en transform.
+--
+--
+-- INGA MARKÖRER FLYTTAS. Kontrollerat före ändringen.
+--
+-- En fläcks position sparas i MESH-LOKALA koordinater:
+-- BasemeshBody.tsx gör group.worldToLocal(event.point) före
+-- onSurfaceClick, på samma <group> som bar skalan. Skalan dividerades alltså
+-- bort på vägen in, och markörerna renderas inuti samma group och skalades
+-- tillbaka på vägen ut. Att skalan försvinner ändrar ingen lagrad position.
+--
+-- Dessutom: samtliga profiler i databasen hade body_type = 'neutral', vars
+-- skala redan var [1,1,1]. Funktionen fanns, och ingen använde den.
+--
+--
+-- KOLUMNGRANTERNA följer med automatiskt när kolumnen släpps -- den stod med
+-- i GRANT INSERT/UPDATE-listorna i 20260829135112, och Postgres tar bort
+-- kolumnens rättigheter tillsammans med kolumnen.
+
+ALTER TABLE public.profiles DROP COLUMN IF EXISTS body_type;

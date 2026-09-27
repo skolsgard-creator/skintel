@@ -1,0 +1,122 @@
+-- ÅTERSTÄLLNING AV TVÅFAKTOR FÖR EN GRANSKARE ELLER ADMIN
+--
+-- KÖRS MANUELLT, med service-role. Medvetet inte en migration och medvetet
+-- inget UI ännu -- se KNOWN_ISSUES.md. Läs hela filen innan du kör något.
+--
+-- NÄR DEN HÄR PROCEDUREN GÄLLER
+--
+-- Ett konto med en VERIFIERAD TOTP-faktor som tappat tillgången till den.
+-- Cirkeln är sluten: från en aal1-session avvisas både `mfa.unenroll`
+-- (`AAL2 required to unenroll verified factor`) och `mfa.enroll`
+-- (`AAL2 required to enroll a new factor`). Personen kan inte ta sig ur det
+-- själv.
+--
+-- GÄLLER INTE för ett konto som ALDRIG registrerat en faktor. Ett sådant konto
+-- kan registrera från aal1 och kommer in på egen hand. Kör inte det här
+-- skriptet då -- kontrollera först, i steg 1.
+--
+--
+-- ===========================================================================
+-- STEG 1 -- IDENTITETSKONTROLL. GÖRS FÖRE ALLT ANNAT, UTANFÖR SYSTEMET.
+-- ===========================================================================
+--
+-- Den här åtgärden ger någon tillbaka nycklarna till andra människors
+-- hudfoton och journaldata. Ett mejl eller ett chattmeddelande som SÄGER sig
+-- komma från granskaren räcker inte -- det är precis den kanal en angripare
+-- redan har om hen tagit över adressen.
+--
+-- EN av följande två metoder ska användas. Inte "någon form av kontroll".
+--
+--   A. VIDEOSAMTAL. Ring upp personen i video. Be hen hålla upp giltig
+--      legitimation (pass, nationellt id-kort eller körkort) bredvid ansiktet.
+--      Ansiktet ska matcha legitimationen, och namnet ska matcha namnet i
+--      granskaravtalet. Ta INTE emot ett inspelat klipp eller en bild --
+--      samtalet ska vara levande så att du kan be om en rörelse eller en
+--      fråga som inte går att förbereda.
+--
+--   B. UPPRINGNING TILL AVTALSNUMRET. Ring UPP det telefonnummer som står i
+--      granskarens avtal med Skintel. Ring upp -- ta aldrig emot ett samtal
+--      från ett nummer som påstår sig vara det. Bekräfta muntligt vem du
+--      talar med och vad hen begär.
+--
+-- Är numret nyligen ändrat, eller kan du inte nå avtalsnumret: använd metod A.
+-- Går ingendera: gör ingenting och eskalera. Ett låst konto i ett dygn är
+-- billigare än ett övertaget granskarkonto.
+--
+-- METODEN SKA SKRIVAS IN I MOTIVERINGEN NEDAN. Det är därför fältet finns.
+--
+--
+-- ===========================================================================
+-- STEG 2 -- KONTROLLERA LÄGET
+-- ===========================================================================
+--
+--   SELECT u.id, u.email,
+--          (SELECT count(*) FROM auth.mfa_factors f
+--            WHERE f.user_id = u.id AND f.status = 'verified') AS verifierade,
+--          (SELECT count(*) FROM auth.sessions s WHERE s.user_id = u.id) AS sessioner
+--     FROM auth.users u
+--    WHERE u.email = '<granskarens adress>';
+--
+-- verifierade = 0  ->  KÖR INTE. Personen kan registrera själv; problemet är
+--                      något annat. Felsök det i stället.
+-- verifierade > 0  ->  fortsätt.
+--
+--
+-- ===========================================================================
+-- STEG 3 -- UTFÖR
+-- ===========================================================================
+--
+-- Fyll i alla tre. Funktionen vägrar en motivering under tio tecken, och
+-- vägrar ett performed_by som inte tillhör en admin.
+--
+-- performed_by ÄR EN SJÄLVDEKLARATION. Funktionen kontrollerar att uuid:t
+-- tillhör en admin, inte att du är den admin -- den körs med service-role och
+-- har ingen inloggad identitet att jämföra mot. Skriv ditt eget uuid. Att
+-- skriva någon annans är inte något systemet hindrar, och det är hela skälet
+-- till att det står här.
+--
+--   SELECT * FROM public.reset_user_mfa(
+--     '<granskarens user_id>'::uuid,
+--     '<DITT admin user_id>'::uuid,
+--     'Videosamtal 2026-09-07, pass matchade ansikte och avtalsnamn. Ny telefon.'
+--   );
+--
+-- Returnerar factors_removed och sessions_removed.
+--
+--
+-- ===========================================================================
+-- STEG 4 -- SÄG DET SOM ÄR SANT TILL PERSONEN
+-- ===========================================================================
+--
+--   * Logga in som vanligt. Du skickas till tvåstegsverifieringen och
+--     registrerar en ny autentiseringsapp.
+--   * Alla dina inloggningar är utloggade. Du måste logga in på nytt överallt.
+--   * OM ÅTERSTÄLLNINGEN BEROR PÅ EN STULEN TELEFON: den som har telefonen kan
+--     vara kvar i upp till en timme. Sessionen är borta, men en redan utfärdad
+--     access-token gäller till den går ut (3600 sekunder i det här projektet).
+--     Utkastningen är inte omedelbar. Säg det -- låt ingen tro att telefonen
+--     kopplades bort i samma sekund.
+--
+--     MÄTT 2026-09-07, inte antaget. Samma token, före och efter en körning av
+--     reset_user_mfa:
+--
+--       PostgREST  /rest/v1/...     200  före  ->  200  EFTER
+--       getClaims  (JWT-verifiering) OK  före  ->   OK  EFTER
+--       GoTrue     /auth/v1/user     OK  före  ->  avvisad EFTER
+--
+--     Låt dig inte luras av den sista raden. GoTrues /user-endpoint slår upp
+--     sessionen och avvisar därför direkt -- men den ligger inte på någon av
+--     våra behörighetsvägar. RLS och requireSupabaseAuth verifierar bara
+--     JWT:n, och den fortsätter gälla. Den som testar med getUser() och ser
+--     ett avslag drar fel slutsats: åtkomsten till patientdata finns kvar
+--     tills token går ut.
+--
+--
+-- ===========================================================================
+-- STEG 5 -- KONTROLLERA SPÅRET
+-- ===========================================================================
+--
+--   SELECT * FROM public.mfa_recovery_log ORDER BY at DESC LIMIT 5;
+--
+-- Finns ingen rad har ingen återställning skett -- raderingen och loggen
+-- ligger i samma transaktion, så det ena kan inte ha hänt utan det andra.

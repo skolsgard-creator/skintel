@@ -1,0 +1,15 @@
+node_modules
+dist
+dev-dist
+*.log
+.DS_Store
+
+# Lokala hemligheter. .env är incheckad (bara publika värden), .env.local inte.
+.env.local
+.env.*.local
+
+# Supabase CLI:ns länkningstillstånd -- lokalt och maskinspecifikt.
+supabase/.temp/
+
+# Routerpluginets cache
+.tanstack/

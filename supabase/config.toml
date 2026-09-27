@@ -1,0 +1,17 @@
+project_id = "npaktlkeqsugckubccbn"
+
+# Dörren till en patientbild -- se supabase/functions/bildlank/index.ts.
+# verify_jwt = true är default och står här för att vara uttrycklig: ett anrop
+# utan giltig token ska avvisas av plattformen, före vår kod. Behörigheten
+# avgörs sedan i public.request_case_image(), inte i funktionen.
+[functions.bildlank]
+verify_jwt = true
+
+# Arbetaren som tömmer notis-outboxen -- se supabase/functions/notisutskick.
+# verify_jwt = false med flit: anroparen är pg_cron, inte en användare.
+# Alternativet vore service-role-nyckeln i cron-jobbets definition, där den blir
+# läsbar för alla som kan läsa cron.job. Funktionen kräver i stället en egen
+# hemlighet i x-notis-secret. En läckt arbetarhemlighet låter någon trigga
+# utskick i förtid; en läckt service-role-nyckel är hela databasen.
+[functions.notisutskick]
+verify_jwt = false

@@ -1,0 +1,4 @@
+# Supply-chain-spärr: ett paket måste ha varit publicerat i ett dygn innan
+# bun installerar det. Ärvt från hud-koll, utan undantagslista.
+[install]
+minimumReleaseAge = 86400
