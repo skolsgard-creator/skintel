@@ -25,13 +25,31 @@ Ingen SSR, inga serverfunktioner. Pakethanterare: bun.
 - `npx supabase db push` — kör nya migrationer mot den länkade databasen
 - `npx supabase db query --linked -f scripts/kolla-rls.sql` — behörighetskontrollerna, körs efter varje migration
 
+## Designsystemet
+
+Tokens i `src/styles/app.css` (`@theme`), komponenter i `src/components/ui/`,
+allt visat på `/dev/ui` (finns bara i dev-läge). Identiteten heter "lugn
+expertis" (ritning v2, avsnitt 3): varm botten, djup blågrön primär, bärnsten
+som enda accent, Fraunces för rubriker och DM Sans för resten, självhostade.
+
+- Tailwinds standardpalett är borttagen med flit (`--color-*: initial`): det
+  finns ingen `red-500` att nå. Risknivåer bärs av ord, aldrig av rött/grönt.
+  Behövs en färg: lägg till en token med ett namn som säger vad den är till för.
+- Namnen följer shadcn/ui (`background`, `primary`, `muted-foreground` …) och
+  `components.json` finns, så `bunx shadcn@latest add <komponent>` fungerar.
+  Kontrollera den genererade komponenten mot tokens och regel 3 innan den
+  används.
+- Nya byggstenar visas på `/dev/ui` i samma commit som de skapas.
+
 ## Databasen
 
 Supabase-projekt `npaktlkeqsugckubccbn` (Frankfurt). Migrationerna i
 `supabase/migrations/` är historiken; **fråga databasen, inte filerna** när
 du vill veta vad som gäller (`npx supabase db query --linked "..."`). Nya
 ändringar = ny migrationsfil, aldrig redigering av gamla. `20260812143321` är
-en dubblett som redan är registrerad som körd — rör den inte.
+en dubblett som redan är registrerad som körd — rör den inte. Hänvisningar
+till `KNOWN_ISSUES.md` och `docs/…` i migrationer, skript och edge-funktioner
+avser filerna i `hud-koll` (git-historiken där); de följde inte med hit.
 
 Behörigheten bor i databasen. Klienten använder den publika nyckeln; det som
 kräver service-role ligger i edge-funktioner som själva saknar

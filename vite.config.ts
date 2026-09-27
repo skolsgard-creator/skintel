@@ -25,12 +25,17 @@ export default defineConfig({
         start_url: "/app",
         scope: "/",
         display: "standalone",
-        background_color: "#faf8f3",
-        theme_color: "#0f5f66",
+        background_color: "#fbf8f3",
+        theme_color: "#195553",
         icons: [
           { src: "/icon-192.png", sizes: "192x192", type: "image/png" },
           { src: "/icon-512.png", sizes: "512x512", type: "image/png" },
-          { src: "/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+          {
+            src: "/icon-maskable-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
+          },
         ],
       },
       workbox: {
@@ -38,6 +43,9 @@ export default defineConfig({
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/\.well-known\//, /^\/robots\.txt$/],
         globPatterns: ["**/*.{js,css,html,svg,woff2,png}"],
+        // Komponentsidan /dev/ui finns bara i utvecklingsläge (routen svarar
+        // 404 i det byggda paketet), så dess kodfil ska inte förcachas.
+        globIgnores: ["**/ui-*.js"],
       },
     }),
   ],

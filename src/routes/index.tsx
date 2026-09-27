@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { Display, Eyebrow, Lede, Page } from "@/components/ui/page";
 
 export const Route = createFileRoute("/")({
   component: Start,
@@ -13,14 +14,12 @@ function Start() {
   }, []);
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-6 px-4 py-12">
-      <p className="text-sm font-medium tracking-wide text-primary">Skintel</p>
-      <h1 className="font-display text-4xl leading-tight">
+    <Page className="min-h-dvh justify-center gap-5 py-12">
+      <Eyebrow>Skintel</Eyebrow>
+      <Display className="text-display-lg">
         Fota fläcken. En hudläkare avgör vad du bör göra härnäst.
-      </h1>
-      <p className="text-lg text-muted">
-        Vi bygger om Skintel just nu. Den nya sajten öppnar steg för steg under hösten.
-      </p>
-    </main>
+      </Display>
+      <Lede>Vi bygger om Skintel just nu. Den nya sajten öppnar steg för steg under hösten.</Lede>
+    </Page>
   );
 }

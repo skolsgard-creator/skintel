@@ -1,5 +1,7 @@
 # Applicerade migrationer
 
+*Ärvd från `hud-koll` 2026-09-28. `docs/…`-hänvisningarna nedan pekar på filer som ligger kvar där.*
+
 **Historiken hålls numera av Supabase CLI:n, inte av den här filen.** Sedan flytten till
 det egna projektet `npaktlkeqsugckubccbn` (2026-08-30) körs migrationerna med
 `supabase db push`, och `supabase migration list --linked` är den auktoritativa källan

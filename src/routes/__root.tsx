@@ -1,4 +1,6 @@
 import { createRootRoute, Outlet, Link } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
+import { Display, Eyebrow, Page } from "@/components/ui/page";
 
 // Skalet som allt renderas i. Ingen navigering här ännu -- den publika sajten
 // och appen får var sin layout i steg 2.1 och 3.x (ritning v2, avsnitt 7).
@@ -9,7 +11,7 @@ export const Route = createRootRoute({
 
 function RootLayout() {
   return (
-    <div className="min-h-dvh bg-paper text-ink">
+    <div className="min-h-dvh bg-background text-foreground">
       <Outlet />
     </div>
   );
@@ -17,12 +19,14 @@ function RootLayout() {
 
 function NotFound() {
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-4 px-4 py-12">
-      <p className="text-sm text-muted">Sidan finns inte</p>
-      <h1 className="font-display text-3xl">Här fanns ingenting.</h1>
-      <Link to="/" className="text-primary underline underline-offset-4">
-        Till startsidan
-      </Link>
-    </main>
+    <Page className="min-h-dvh justify-center gap-4 py-12">
+      <Eyebrow>Sidan finns inte</Eyebrow>
+      <Display>Här fanns ingenting.</Display>
+      <div>
+        <Button asChild variant="secondary">
+          <Link to="/">Till startsidan</Link>
+        </Button>
+      </div>
+    </Page>
   );
 }
