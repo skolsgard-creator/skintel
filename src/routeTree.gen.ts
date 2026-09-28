@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteRouteImport } from './routes/app/route'
 import { Route as AppIndexRouteImport } from './routes/app/index'
+import { Route as DevIdentitetRouteImport } from './routes/dev/identitet'
 import { Route as DevUiRouteImport } from './routes/dev/ui'
 
 const IndexRoute = IndexRouteImport.update({
@@ -29,6 +30,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const DevIdentitetRoute = DevIdentitetRouteImport.update({
+  id: '/dev/identitet',
+  path: '/dev/identitet',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DevUiRoute = DevUiRouteImport.update({
   id: '/dev/ui',
   path: '/dev/ui',
@@ -38,11 +44,13 @@ const DevUiRoute = DevUiRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteRouteWithChildren
+  '/dev/identitet': typeof DevIdentitetRoute
   '/dev/ui': typeof DevUiRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dev/identitet': typeof DevIdentitetRoute
   '/dev/ui': typeof DevUiRoute
   '/app': typeof AppIndexRoute
 }
@@ -50,20 +58,22 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/app': typeof AppRouteRouteWithChildren
+  '/dev/identitet': typeof DevIdentitetRoute
   '/dev/ui': typeof DevUiRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/app' | '/dev/ui' | '/app/'
+  fullPaths: '/' | '/app' | '/dev/identitet' | '/dev/ui' | '/app/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dev/ui' | '/app'
-  id: '__root__' | '/' | '/app' | '/dev/ui' | '/app/'
+  to: '/' | '/dev/identitet' | '/dev/ui' | '/app'
+  id: '__root__' | '/' | '/app' | '/dev/identitet' | '/dev/ui' | '/app/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRouteRoute: typeof AppRouteRouteWithChildren
+  DevIdentitetRoute: typeof DevIdentitetRoute
   DevUiRoute: typeof DevUiRoute
 }
 
@@ -90,6 +100,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/dev/identitet': {
+      id: '/dev/identitet'
+      path: '/dev/identitet'
+      fullPath: '/dev/identitet'
+      preLoaderRoute: typeof DevIdentitetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dev/ui': {
       id: '/dev/ui'
       path: '/dev/ui'
@@ -115,6 +132,7 @@ const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRouteRoute: AppRouteRouteWithChildren,
+  DevIdentitetRoute: DevIdentitetRoute,
   DevUiRoute: DevUiRoute,
 }
 export const routeTree = rootRouteImport

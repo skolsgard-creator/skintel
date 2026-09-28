@@ -3,9 +3,9 @@ import { createRoot } from "react-dom/client";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
 // Typsnitten är självhostade (OFL-licens) och följer med i bygget; inga
-// anrop till Google Fonts. Fraunces bara med opsz+wght-axlarna, DM Sans
-// likaså: det räcker, och det håller nedladdningen under 140 kB.
-import "@fontsource-variable/fraunces/opsz.css";
+// anrop till Google Fonts. Schibsted Grotesk (rubriker) bara med wght-axeln,
+// DM Sans (allt annat) med opsz+wght: ~110 kB för latin.
+import "@fontsource-variable/schibsted-grotesk/wght.css";
 import "@fontsource-variable/dm-sans/opsz.css";
 import "./styles/app.css";
 

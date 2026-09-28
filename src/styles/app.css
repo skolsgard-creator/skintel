@@ -7,9 +7,11 @@
    larmar. Varm, nästan vit botten; djup blågrön som primärfärg; EN varm
    accent (bärnsten) för det som kräver uppmärksamhet. Inget rött, inget
    grönt som betyder "fara" eller "fritt" -- risknivåer bärs av text och
-   form. Två typsnitt: Fraunces (rubriker, brevets röst) och DM Sans
-   (brödtext och gränssnitt), båda självhostade via @fontsource (se
-   src/main.tsx), inga anrop till Google.
+   form. Två typsnitt: Schibsted Grotesk (rubriker) och DM Sans (brödtext
+   och gränssnitt), båda självhostade via @fontsource (se src/main.tsx),
+   inga anrop till Google. Serif finns bara i brevet från läkaren (steg
+   3.4) -- där betyder den något. Valt på skärm 28 sep 2026 (/dev/identitet):
+   Schibsted, varm botten, pillerknappar, logotyp A.
 
    Namnen följer shadcn/ui:s konvention (background, foreground, primary,
    muted, border ...) så att `bunx shadcn add <komponent>` fungerar rakt
@@ -63,18 +65,19 @@
 
   --font-sans:
     "DM Sans Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-display: "Fraunces Variable", ui-serif, Georgia, "Times New Roman", serif;
+  --font-display: "Schibsted Grotesk Variable", ui-sans-serif, system-ui, sans-serif;
 
   /* Rubrikstorlekar. Brödtexten är 17 px (html nedan); resten av
      Tailwinds skala (text-sm, text-lg ...) räknas i rem och följer med. */
   --text-display-lg: 2.5rem;
   --text-display-lg--line-height: 1.05;
-  --text-display-lg--letter-spacing: -0.015em;
+  --text-display-lg--letter-spacing: -0.03em;
   --text-display: 2rem;
   --text-display--line-height: 1.1;
-  --text-display--letter-spacing: -0.01em;
+  --text-display--letter-spacing: -0.025em;
   --text-title: 1.5rem;
   --text-title--line-height: 1.2;
+  --text-title--letter-spacing: -0.015em;
   --text-eyebrow: 0.8rem;
   --text-eyebrow--line-height: 1.2;
   --text-eyebrow--letter-spacing: 0.08em;
@@ -85,6 +88,9 @@
   --radius-xl: 1.25rem;
   --radius-2xl: 1.5rem;
   --radius-3xl: 2rem;
+  /* Knappens form är en egen token (rounded-button) så att piller kontra
+     mjuka hörn kan avgöras på ett ställe. Piller valdes 28 sep. */
+  --radius-button: 9999px;
 
   --shadow-card: 0 1px 2px oklch(20% 0.02 200 / 0.05), 0 2px 8px oklch(20% 0.02 200 / 0.04);
   --shadow-float: 0 4px 16px oklch(20% 0.02 200 / 0.12), 0 1px 3px oklch(20% 0.02 200 / 0.06);
@@ -132,11 +138,11 @@
     outline-offset: 2px;
   }
 
-  /* Rubriker i serif är ett aktivt val per element (font-display), inte
-     ett arv: appens kortrubriker är sans. Men de som ÄR display får
-     brevets tyngd och täthet här. */
+  /* Rubriktypsnittet är ett aktivt val per element (font-display), inte
+     ett arv: appens kortrubriker är DM Sans. De som ÄR display får sin
+     tyngd här. */
   .font-display {
-    font-weight: 500;
+    font-weight: var(--font-display-weight, 600);
     font-optical-sizing: auto;
   }
 

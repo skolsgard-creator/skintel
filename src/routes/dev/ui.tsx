@@ -1,15 +1,6 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import {
-  ArrowRight,
-  BookOpen,
-  Camera,
-  CircleUser,
-  Clock,
-  FolderOpen,
-  House,
-  Sun,
-} from "lucide-react";
+import { BookOpen, Camera, CircleUser, Clock, FolderOpen, House, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -121,19 +112,19 @@ function UiPage() {
         {/* ---------------------------------------------------------------- */}
         <Section
           title="Typografi"
-          lede="Fraunces för rubriker och brevet. DM Sans för allt annat, 17 px."
+          lede="Schibsted Grotesk för rubriker. DM Sans för allt annat, 17 px. Serif bara i brevet."
         >
           <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-1">
-              <Meta>display-lg · Fraunces 500</Meta>
+              <Meta>display-lg · Schibsted Grotesk 600</Meta>
               <p className="font-display text-display-lg">Fota fläcken. En hudläkare svarar.</p>
             </div>
             <div className="flex flex-col gap-1">
-              <Meta>display · Fraunces 500</Meta>
+              <Meta>display · Schibsted Grotesk 600</Meta>
               <p className="font-display text-display">Vänster underarm, nära armbågen</p>
             </div>
             <div className="flex flex-col gap-1">
-              <Meta>title · Fraunces 500</Meta>
+              <Meta>title · Schibsted Grotesk 600</Meta>
               <p className="font-display text-title">Så här går det till</p>
             </div>
             <div className="flex flex-col gap-1">
@@ -169,7 +160,6 @@ function UiPage() {
           <div className="flex flex-col gap-3">
             <Button block size="lg">
               Ny kontroll
-              <ArrowRight />
             </Button>
             <Button block variant="secondary" size="lg">
               Visa brevet

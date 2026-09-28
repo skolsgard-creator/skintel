@@ -30,7 +30,11 @@ Ingen SSR, inga serverfunktioner. Pakethanterare: bun.
 Tokens i `src/styles/app.css` (`@theme`), komponenter i `src/components/ui/`,
 allt visat på `/dev/ui` (finns bara i dev-läge). Identiteten heter "lugn
 expertis" (ritning v2, avsnitt 3): varm botten, djup blågrön primär, bärnsten
-som enda accent, Fraunces för rubriker och DM Sans för resten, självhostade.
+som enda accent, Schibsted Grotesk för rubriker och DM Sans för resten,
+självhostade; serif bara i brevet från läkaren. Pillerknappar utan pilar.
+Logotypen (koncept A, pricken) genereras av `scripts/rita-logotyp.py` till
+`public/logo/` och `src/components/brand/logo-paths.ts`; komponenten är
+`src/components/brand/logo.tsx`.
 
 - Tailwinds standardpalett är borttagen med flit (`--color-*: initial`): det
   finns ingen `red-500` att nå. Risknivåer bärs av ord, aldrig av rött/grönt.
@@ -40,6 +44,8 @@ som enda accent, Fraunces för rubriker och DM Sans för resten, självhostade.
   Kontrollera den genererade komponenten mot tokens och regel 3 innan den
   används.
 - Nya byggstenar visas på `/dev/ui` i samma commit som de skapas.
+- `/dev/identitet` är identitetsprovet från steg 1.4 (typsnitt, botten, hörn,
+  logotyp att välja på skärm). Provtypsnitten där laddas bara på den sidan.
 
 ## Databasen
 

@@ -16,7 +16,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.svg", "robots.txt"],
+      includeAssets: ["favicon.svg", "apple-touch-icon.png", "robots.txt"],
       manifest: {
         name: "Skintel",
         short_name: "Skintel",
@@ -43,9 +43,19 @@ export default defineConfig({
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/\.well-known\//, /^\/robots\.txt$/],
         globPatterns: ["**/*.{js,css,html,svg,woff2,png}"],
-        // Komponentsidan /dev/ui finns bara i utvecklingsläge (routen svarar
-        // 404 i det byggda paketet), så dess kodfil ska inte förcachas.
-        globIgnores: ["**/ui-*.js"],
+        // Sidorna under /dev finns bara i utvecklingsläge (routerna svarar
+        // 404 i det byggda paketet), så deras kod, stil och provtypsnitt
+        // ska inte förcachas. Typsnittet som väljs i 1.4 flyttas till
+        // main.tsx och faller då utanför listan.
+        globIgnores: [
+          "**/ui-*.js",
+          "**/identitet-*.{js,css}",
+          "**/page-*.js",
+          "**/familjen-grotesk-*.woff2",
+          "**/fraunces-*.woff2",
+          "**/inter-*.woff2",
+          "**/source-serif-4-*.woff2",
+        ],
       },
     }),
   ],

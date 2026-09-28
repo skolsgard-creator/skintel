@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { Display, Eyebrow, Lede, Page } from "@/components/ui/page";
+import { Display, Lede, Page } from "@/components/ui/page";
+import { Wordmark } from "@/components/brand/logo";
 
 export const Route = createFileRoute("/")({
   component: Start,
@@ -15,7 +16,7 @@ function Start() {
 
   return (
     <Page className="min-h-dvh justify-center gap-5 py-12">
-      <Eyebrow>Skintel</Eyebrow>
+      <Wordmark height="1.75rem" />
       <Display className="text-display-lg">
         Fota fläcken. En hudläkare avgör vad du bör göra härnäst.
       </Display>
