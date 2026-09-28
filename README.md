@@ -19,5 +19,11 @@ npx supabase db push                                     # nya migrationer
 npx supabase db query --linked -f scripts/kolla-rls.sql  # behörighetskontrollerna
 ```
 
+Bildjämförelse av designsystemet (första gången: `bunx playwright install chromium`):
+
+```bash
+bun run shots        # skriver shots/*.png, förra körningen i shots/forra/
+```
+
 Läs `CLAUDE.md` innan du ändrar något: reglerna där är juridiska och
 medicinska, inte stilfrågor.

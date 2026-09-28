@@ -15,12 +15,13 @@ function Page({ className, ...props }: React.ComponentProps<"main">) {
   );
 }
 
-/** Den lilla raden ovanför en rubrik: avsändare, avsnitt, steg 2 av 4. */
+/** Den lilla raden ovanför en rubrik: avsändare, avsnitt, steg 2 av 4.
+ *  Dämpad, inte blågrön: blågrönt betyder "svarar på tryck". */
 function Eyebrow({ className, ...props }: React.ComponentProps<"p">) {
   return (
     <p
       data-slot="eyebrow"
-      className={cn("text-eyebrow font-medium uppercase text-primary", className)}
+      className={cn("text-eyebrow font-medium uppercase text-muted-foreground", className)}
       {...props}
     />
   );

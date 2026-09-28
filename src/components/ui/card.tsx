@@ -1,15 +1,15 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-// Kortet: en yta som är en aning ljusare än bakgrunden, hårfin kant,
-// nästan ingen skugga. Det ska kännas som papper på ett bord, inte som
-// en flytande panel.
+// Kortet: en yta som är en aning ljusare än bakgrunden, med hårfin kant
+// och ingen skugga -- papper på ett bord, inte en flytande panel. Skugga
+// (shadow-float) har bara det som svävar: bottenblad, mittknapp, notis.
 function Card({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card"
       className={cn(
-        "flex flex-col rounded-2xl border border-border bg-card text-card-foreground shadow-card",
+        "flex flex-col rounded-2xl border border-border bg-card text-card-foreground",
         className,
       )}
       {...props}

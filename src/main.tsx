@@ -2,11 +2,10 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
-// Typsnitten är självhostade (OFL-licens) och följer med i bygget; inga
-// anrop till Google Fonts. Schibsted Grotesk (rubriker) bara med wght-axeln,
-// DM Sans (allt annat) med opsz+wght: ~110 kB för latin.
+// Typsnittet är självhostat (OFL-licens) och följer med i bygget; inga
+// anrop till Google Fonts. En familj i gränssnittet: Schibsted Grotesk med
+// wght-axeln, ~47 kB för latin. Brevets serif laddas där brevet visas.
 import "@fontsource-variable/schibsted-grotesk/wght.css";
-import "@fontsource-variable/dm-sans/opsz.css";
 import "./styles/app.css";
 
 const router = createRouter({

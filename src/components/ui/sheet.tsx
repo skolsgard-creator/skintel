@@ -17,7 +17,7 @@ function SheetOverlay({ className, ...props }: React.ComponentProps<typeof Drawe
   return (
     <Drawer.Overlay
       data-slot="sheet-overlay"
-      className={cn("fixed inset-0 z-50 bg-foreground/40", className)}
+      className={cn("fixed inset-0 z-(--z-sheet) bg-foreground/40", className)}
       {...props}
     />
   );
@@ -34,7 +34,7 @@ function SheetContent({
       <Drawer.Content
         data-slot="sheet-content"
         className={cn(
-          "fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[92dvh] w-full max-w-lg flex-col",
+          "fixed inset-x-0 bottom-0 z-(--z-sheet) mx-auto flex max-h-[92dvh] w-full max-w-lg flex-col",
           "rounded-t-3xl bg-card text-card-foreground shadow-sheet outline-none",
           className,
         )}

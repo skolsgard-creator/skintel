@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
-import { BookOpen, Camera, CircleUser, Clock, FolderOpen, House } from "lucide-react";
+import { BookOpen, Camera, CircleUser, Clock, FolderOpen, PersonStanding } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,9 +18,9 @@ import { MarkBlicken, MarkPricken, WordmarkBlicken, WordmarkPricken } from "./lo
 import { Wordmark } from "@/components/brand/logo";
 
 // Typsnitten som prövades. Ligger här, inte i main.tsx, så att de bara laddas
-// på den här sidan. Valet 28 sep (Schibsted, varm, piller, A) sitter i
-// app.css; Schibsted och DM Sans laddas därför i main.tsx. Sidan finns kvar
-// som beslutsunderlag.
+// på den här sidan. Valet 28 sep (Schibsted, varm, piller, A -- och efter
+// granskningsrunda 2: en enda familj) sitter i app.css; Schibsted laddas
+// därför i main.tsx. Sidan finns kvar som beslutsunderlag.
 import "@fontsource-variable/familjen-grotesk/wght.css";
 import "@fontsource-variable/fraunces/opsz.css";
 import "@fontsource-variable/inter/opsz.css";
@@ -87,10 +87,6 @@ const cornerVars: Record<Corners, CSSProperties> = {
   piller: { "--radius-button": "9999px" } as CSSProperties,
 };
 
-const letterFont: CSSProperties = {
-  fontFamily: "'Source Serif 4 Variable', Georgia, 'Times New Roman', serif",
-};
-
 export function IdentitetPage() {
   useEffect(() => {
     document.title = "Identitetsprov · Skintel";
@@ -115,7 +111,7 @@ export function IdentitetPage() {
             value={typeface}
             onChange={setTypeface}
             options={[
-              { value: "schibsted", label: "Schibsted" },
+              { value: "schibsted", label: "Schibsted (vald)" },
               { value: "familjen", label: "Familjen" },
               { value: "fraunces", label: "Fraunces" },
             ]}
@@ -125,8 +121,8 @@ export function IdentitetPage() {
             value={base}
             onChange={setBase}
             options={[
-              { value: "sval", label: "Sval" },
-              { value: "varm", label: "Varm" },
+              { value: "sval", label: "Sval + Inter" },
+              { value: "varm", label: "Varm (vald)" },
             ]}
           />
           <Segmented
@@ -135,7 +131,7 @@ export function IdentitetPage() {
             onChange={setCorners}
             options={[
               { value: "mjuka", label: "Mjuka" },
-              { value: "piller", label: "Piller" },
+              { value: "piller", label: "Piller (vald)" },
             ]}
           />
         </div>
@@ -156,7 +152,7 @@ export function IdentitetPage() {
             <Button size="lg" block>
               Kolla en fläck
             </Button>
-            <Button size="lg" block variant="secondary">
+            <Button size="lg" block variant="outline">
               För arbetsgivare
             </Button>
           </div>
@@ -218,23 +214,20 @@ export function IdentitetPage() {
           title="Brevet"
           lede="Det patienten faktiskt får. Serifen används bara här, där den betyder något. Fiktivt ärende; läkarens namn kommer från den som bedömt."
         >
-          <article className="rounded-2xl border border-border bg-card px-6 py-7 shadow-card">
+          <article className="rounded-2xl border border-border bg-card px-6 py-7">
             <header className="flex flex-col gap-1 border-b border-border pb-5">
               <div className="flex items-center justify-between gap-3">
                 <Wordmark height="1.35rem" className="text-primary" />
                 <span className="text-sm text-muted-foreground">28 september 2026</span>
               </div>
-              <p className="pt-3 text-eyebrow font-medium uppercase text-primary">
+              <p className="pt-3 text-eyebrow font-medium uppercase text-muted-foreground">
                 Brev från din hudläkare
               </p>
               <p className="text-sm text-muted-foreground">
                 Ärende: fläck på vänster underarm · 3 foton
               </p>
             </header>
-            <div
-              style={letterFont}
-              className="flex flex-col gap-4 pt-6 text-[1.1rem] leading-relaxed"
-            >
+            <div className="font-letter flex flex-col gap-4 pt-6 text-body-lg">
               <p>Hej,</p>
               <p>
                 Tack för dina bilder. Jag har tittat på alla tre, på dina svar om fläcken och på din
@@ -338,7 +331,7 @@ export function IdentitetPage() {
         >
           <ol className="flex flex-col gap-2 text-muted-foreground">
             <li>1. Rubriktypsnitt: Schibsted, Familjen eller Fraunces.</li>
-            <li>2. Botten: sval med Inter, eller varm med DM Sans.</li>
+            <li>2. Botten: sval med Inter, eller varm med Schibsted rakt igenom.</li>
             <li>3. Hörn: mjuka eller piller.</li>
             <li>4. Logotyp: A eller B.</li>
           </ol>
@@ -346,9 +339,9 @@ export function IdentitetPage() {
       </Page>
 
       <BottomNav
-        activeKey="hem"
+        activeKey="hud"
         items={[
-          { key: "hem", label: "Hem", icon: House, to: "/app" },
+          { key: "hud", label: "Min hud", icon: PersonStanding, to: "/app" },
           { key: "arenden", label: "Ärenden", icon: FolderOpen, to: "/app" },
           { key: "kunskap", label: "Kunskap", icon: BookOpen, to: "/app" },
           { key: "profil", label: "Profil", icon: CircleUser, to: "/app" },
@@ -383,7 +376,7 @@ function Segmented<T extends string>({
             className={cn(
               "h-8 flex-1 truncate rounded-md px-2 text-xs font-medium transition-colors",
               o.value === value
-                ? "bg-card text-foreground shadow-card"
+                ? "bg-card text-foreground shadow-xs"
                 : "text-muted-foreground hover:text-foreground",
             )}
           >

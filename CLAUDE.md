@@ -28,39 +28,42 @@ Ingen SSR, inga serverfunktioner. Pakethanterare: bun.
 ## Designsystemet
 
 Tokens i `src/styles/app.css` (`@theme`), komponenter i `src/components/ui/`,
-allt visat på `/dev/ui` (finns bara i dev-läge). Identiteten heter "lugn
-expertis" (ritning v2, avsnitt 3): varm botten, djup blågrön primär, bärnsten
-som enda accent, Schibsted Grotesk för rubriker och DM Sans för resten,
-självhostade; serif bara i brevet från läkaren. Pillerknappar utan pilar.
-Logotypen (koncept A, pricken) genereras av `scripts/rita-logotyp.py` till
-`public/logo/` och `src/components/brand/logo-paths.ts`; komponenten är
-`src/components/brand/logo.tsx`.
+allt visat på `/dev/ui` (finns bara i dev-läge; där provas också mörkt läge).
+Identiteten heter "lugn expertis" (ritning v2, avsnitt 3): varm botten
+(papper, inte kräm), djup blågrön primär, bärnsten som enda accent, en
+typsnittsfamilj (Schibsted Grotesk 400/500/600, självhostad), serif bara i
+brevet från läkaren. Pillerknappar utan pilar. Logotyp A ("pricken")
+genereras av `scripts/rita-logotyp.py` till `public/logo/` och
+`src/components/brand/logo-paths.ts`; komponenten är `src/components/brand/logo.tsx`.
 
+Reglerna står i app.css-huvudet och gäller all UI-kod:
+
+- Blågrön betyder "svarar på tryck". Etiketter och rubriker är aldrig blågröna.
+- Radier: knapp = piller, kontroll = xl, kort = 2xl, blad = 3xl.
+- Ikoner: lucide, 24 px, linje 1,75 (aktiv 2,25). Inga emojis.
+- Kort har kant, ingen skugga. Skugga bara på det som svävar.
+- Tryckrespons vid nedtryck (`pressable`, `active:`), aldrig bara vid släpp.
+  Rörelselängder `motion-fast/base/slow`; fjäder utan överskjut som standard.
+- Lager: `z-(--z-nav)`, `z-(--z-sheet)`, `z-(--z-notice)`.
+- Kontraster mäts, inte gissas: text ≥ 4,5:1, kontrollkanter ≥ 3:1
+  (`--color-input`), platshållare ≥ 4,5:1 (`--color-faint`).
+- `html` har `font-size: 106.25%`, aldrig ett px-tal: storleken följer
+  användarens inställning.
 - Tailwinds standardpalett är borttagen med flit (`--color-*: initial`): det
   finns ingen `red-500` att nå. Risknivåer bärs av ord, aldrig av rött/grönt.
-  Behövs en färg: lägg till en token med ett namn som säger vad den är till för.
-- Namnen följer shadcn/ui (`background`, `primary`, `muted-foreground` …) och
-  `components.json` finns, så `bunx shadcn@latest add <komponent>` fungerar.
-  Kontrollera den genererade komponenten mot tokens och regel 3 innan den
-  används.
-- Nya byggstenar visas på `/dev/ui` i samma commit som de skapas.
-- `/dev/identitet` är identitetsprovet från steg 1.4 (typsnitt, botten, hörn,
-  logotyp att välja på skärm). Provtypsnitten där laddas bara på den sidan.
-
-## Databasen
-
-Supabase-projekt `npaktlkeqsugckubccbn` (Frankfurt). Migrationerna i
-`supabase/migrations/` är historiken; **fråga databasen, inte filerna** när
-du vill veta vad som gäller (`npx supabase db query --linked "..."`). Nya
-ändringar = ny migrationsfil, aldrig redigering av gamla. `20260812143321` är
-en dubblett som redan är registrerad som körd — rör den inte. Hänvisningar
-till `KNOWN_ISSUES.md` och `docs/…` i migrationer, skript och edge-funktioner
-avser filerna i `hud-koll` (git-historiken där); de följde inte med hit.
-
-Behörigheten bor i databasen. Klienten använder den publika nyckeln; det som
-kräver service-role ligger i edge-funktioner som själva saknar
-behörighetslogik och frågar en RPC (`assert_admin_session()` m.fl.) innan de
-gör något.
+- Namnen följer shadcn/ui och `components.json` finns, så
+  `bunx shadcn@latest add <komponent>` fungerar. Kontrollera den genererade
+  komponenten mot tokens och regel 3 innan den används.
+- Nya byggstenar visas på `/dev/ui` i samma commit som de skapas. En byggsten
+  som inte visas där finns inte.
+- `bun run shots` renderar sidorna till `shots/` (förra körningen i
+  `shots/forra/`) så att en ändring går att jämföra bild mot bild. Kräver
+  `bunx playwright install chromium` en gång.
+- `/dev/identitet` är identitetsprovet från steg 1.4 (beslutsunderlag).
+  Provtypsnitten där laddas bara på den sidan.
+- Mörkt läge: tokens finns under `:root[data-theme="dark"]` och är
+  kontrastmätta, men slås på först i ett eget steg (systemföljning + val i
+  profilen).
 
 ## Regler som inte får brytas (bakgrund i ritningen)
 

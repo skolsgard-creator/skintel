@@ -9,10 +9,10 @@
     "preview": "vite preview --host --port 8080",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "shots": "node scripts/shots.mjs"
   },
   "dependencies": {
-    "@fontsource-variable/dm-sans": "^5.3.0",
     "@fontsource-variable/familjen-grotesk": "^5.3.0",
     "@fontsource-variable/fraunces": "^5.3.0",
     "@fontsource-variable/inter": "^5.3.0",
@@ -37,6 +37,7 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
+    "playwright": "^1.63.0",
     "prettier": "^3.7.3",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.9.3",

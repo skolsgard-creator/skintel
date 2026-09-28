@@ -13,3 +13,6 @@ supabase/.temp/
 
 # Routerpluginets cache
 .tanstack/
+
+# bildjämförelser från bun run shots
+shots/
