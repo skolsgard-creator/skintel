@@ -10,20 +10,64 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as AppRouteRouteImport } from './routes/app/route'
+import { Route as GranskaRouteRouteImport } from './routes/granska/route'
+import { Route as InbjudanRouteImport } from './routes/inbjudan'
+import { Route as LoggaInRouteImport } from './routes/logga-in'
+import { Route as OrganisationRouteRouteImport } from './routes/organisation/route'
+import { Route as TvafaktorRouteImport } from './routes/tvafaktor'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as DevIdentitetRouteImport } from './routes/dev/identitet'
 import { Route as DevUiRouteImport } from './routes/dev/ui'
+import { Route as GranskaIndexRouteImport } from './routes/granska/index'
+import { Route as OrganisationIndexRouteImport } from './routes/organisation/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRouteRoute = AdminRouteRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppRouteRoute = AppRouteRouteImport.update({
   id: '/app',
   path: '/app',
   getParentRoute: () => rootRouteImport,
+} as any)
+const GranskaRouteRoute = GranskaRouteRouteImport.update({
+  id: '/granska',
+  path: '/granska',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InbjudanRoute = InbjudanRouteImport.update({
+  id: '/inbjudan',
+  path: '/inbjudan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoggaInRoute = LoggaInRouteImport.update({
+  id: '/logga-in',
+  path: '/logga-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrganisationRouteRoute = OrganisationRouteRouteImport.update({
+  id: '/organisation',
+  path: '/organisation',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TvafaktorRoute = TvafaktorRouteImport.update({
+  id: '/tvafaktor',
+  path: '/tvafaktor',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRouteRoute,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
@@ -40,39 +84,118 @@ const DevUiRoute = DevUiRouteImport.update({
   path: '/dev/ui',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GranskaIndexRoute = GranskaIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => GranskaRouteRoute,
+} as any)
+const OrganisationIndexRoute = OrganisationIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => OrganisationRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteRouteWithChildren
   '/app': typeof AppRouteRouteWithChildren
+  '/granska': typeof GranskaRouteRouteWithChildren
+  '/organisation': typeof OrganisationRouteRouteWithChildren
+  '/inbjudan': typeof InbjudanRoute
+  '/logga-in': typeof LoggaInRoute
+  '/tvafaktor': typeof TvafaktorRoute
   '/dev/identitet': typeof DevIdentitetRoute
   '/dev/ui': typeof DevUiRoute
+  '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
+  '/granska/': typeof GranskaIndexRoute
+  '/organisation/': typeof OrganisationIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/inbjudan': typeof InbjudanRoute
+  '/logga-in': typeof LoggaInRoute
+  '/tvafaktor': typeof TvafaktorRoute
   '/dev/identitet': typeof DevIdentitetRoute
   '/dev/ui': typeof DevUiRoute
+  '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
+  '/granska': typeof GranskaIndexRoute
+  '/organisation': typeof OrganisationIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteRouteWithChildren
   '/app': typeof AppRouteRouteWithChildren
+  '/granska': typeof GranskaRouteRouteWithChildren
+  '/organisation': typeof OrganisationRouteRouteWithChildren
+  '/inbjudan': typeof InbjudanRoute
+  '/logga-in': typeof LoggaInRoute
+  '/tvafaktor': typeof TvafaktorRoute
   '/dev/identitet': typeof DevIdentitetRoute
   '/dev/ui': typeof DevUiRoute
+  '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
+  '/granska/': typeof GranskaIndexRoute
+  '/organisation/': typeof OrganisationIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/app' | '/dev/identitet' | '/dev/ui' | '/app/'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/app'
+    | '/granska'
+    | '/organisation'
+    | '/inbjudan'
+    | '/logga-in'
+    | '/tvafaktor'
+    | '/dev/identitet'
+    | '/dev/ui'
+    | '/admin/'
+    | '/app/'
+    | '/granska/'
+    | '/organisation/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dev/identitet' | '/dev/ui' | '/app'
-  id: '__root__' | '/' | '/app' | '/dev/identitet' | '/dev/ui' | '/app/'
+  to:
+    | '/'
+    | '/inbjudan'
+    | '/logga-in'
+    | '/tvafaktor'
+    | '/dev/identitet'
+    | '/dev/ui'
+    | '/admin'
+    | '/app'
+    | '/granska'
+    | '/organisation'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/app'
+    | '/granska'
+    | '/organisation'
+    | '/inbjudan'
+    | '/logga-in'
+    | '/tvafaktor'
+    | '/dev/identitet'
+    | '/dev/ui'
+    | '/admin/'
+    | '/app/'
+    | '/granska/'
+    | '/organisation/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRouteRoute: typeof AdminRouteRouteWithChildren
   AppRouteRoute: typeof AppRouteRouteWithChildren
+  GranskaRouteRoute: typeof GranskaRouteRouteWithChildren
+  OrganisationRouteRoute: typeof OrganisationRouteRouteWithChildren
+  InbjudanRoute: typeof InbjudanRoute
+  LoggaInRoute: typeof LoggaInRoute
+  TvafaktorRoute: typeof TvafaktorRoute
   DevIdentitetRoute: typeof DevIdentitetRoute
   DevUiRoute: typeof DevUiRoute
 }
@@ -86,12 +209,61 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/app': {
       id: '/app'
       path: '/app'
       fullPath: '/app'
       preLoaderRoute: typeof AppRouteRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/granska': {
+      id: '/granska'
+      path: '/granska'
+      fullPath: '/granska'
+      preLoaderRoute: typeof GranskaRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inbjudan': {
+      id: '/inbjudan'
+      path: '/inbjudan'
+      fullPath: '/inbjudan'
+      preLoaderRoute: typeof InbjudanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/logga-in': {
+      id: '/logga-in'
+      path: '/logga-in'
+      fullPath: '/logga-in'
+      preLoaderRoute: typeof LoggaInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/organisation': {
+      id: '/organisation'
+      path: '/organisation'
+      fullPath: '/organisation'
+      preLoaderRoute: typeof OrganisationRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tvafaktor': {
+      id: '/tvafaktor'
+      path: '/tvafaktor'
+      fullPath: '/tvafaktor'
+      preLoaderRoute: typeof TvafaktorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
     }
     '/app/': {
       id: '/app/'
@@ -114,8 +286,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevUiRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/granska/': {
+      id: '/granska/'
+      path: '/'
+      fullPath: '/granska/'
+      preLoaderRoute: typeof GranskaIndexRouteImport
+      parentRoute: typeof GranskaRouteRoute
+    }
+    '/organisation/': {
+      id: '/organisation/'
+      path: '/'
+      fullPath: '/organisation/'
+      preLoaderRoute: typeof OrganisationIndexRouteImport
+      parentRoute: typeof OrganisationRouteRoute
+    }
   }
 }
+
+interface AdminRouteRouteChildren {
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
+  AdminRouteRouteChildren,
+)
 
 interface AppRouteRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
@@ -129,9 +327,38 @@ const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
   AppRouteRouteChildren,
 )
 
+interface GranskaRouteRouteChildren {
+  GranskaIndexRoute: typeof GranskaIndexRoute
+}
+
+const GranskaRouteRouteChildren: GranskaRouteRouteChildren = {
+  GranskaIndexRoute: GranskaIndexRoute,
+}
+
+const GranskaRouteRouteWithChildren = GranskaRouteRoute._addFileChildren(
+  GranskaRouteRouteChildren,
+)
+
+interface OrganisationRouteRouteChildren {
+  OrganisationIndexRoute: typeof OrganisationIndexRoute
+}
+
+const OrganisationRouteRouteChildren: OrganisationRouteRouteChildren = {
+  OrganisationIndexRoute: OrganisationIndexRoute,
+}
+
+const OrganisationRouteRouteWithChildren =
+  OrganisationRouteRoute._addFileChildren(OrganisationRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRouteRoute: AdminRouteRouteWithChildren,
   AppRouteRoute: AppRouteRouteWithChildren,
+  GranskaRouteRoute: GranskaRouteRouteWithChildren,
+  OrganisationRouteRoute: OrganisationRouteRouteWithChildren,
+  InbjudanRoute: InbjudanRoute,
+  LoggaInRoute: LoggaInRoute,
+  TvafaktorRoute: TvafaktorRoute,
   DevIdentitetRoute: DevIdentitetRoute,
   DevUiRoute: DevUiRoute,
 }

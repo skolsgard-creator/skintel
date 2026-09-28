@@ -65,6 +65,27 @@ Reglerna står i app.css-huvudet och gäller all UI-kod:
   kontrastmätta, men slås på först i ett eget steg (systemföljning + val i
   profilen).
 
+## Inloggning (steg 1.5)
+
+Huvudvägen är en sexsiffrig engångskod till e-post (`src/lib/auth.ts`); ingen
+magisk länk, inga lösenord för riktiga användare. Konto skapas bara via
+`/inbjudan` (arbetsgivarens kod) och senare via köp; `/logga-in` skapar aldrig
+konton. Felmeddelanden avslöjar aldrig om en adress finns (`auth-outcome.ts`,
+testad). Tvåfaktor (TOTP, `src/lib/mfa.ts`) är tvingande för läkare och admin;
+kravet bor i databasen (`reviewer_session_status`, `has_verified_mfa`) och
+speglas i klientens grindar (`src/lib/gates.ts`) som bara styr vart man
+skickas. Rollhem: dermatolog → `/granska`, HR-admin → `/organisation`, admin →
+`/admin`, annars `/app` (`src/lib/roles.ts`, RLS-avgränsade uppslag).
+
+Utanför repot: Supabase-projektets Magic Link-mall måste innehålla
+`{{ .Token }}` (satt 2026-08-30), OTP-längd 6 = `CODE_LENGTH`, giltighet 300 s.
+Läs längden ur ett levererat mejl, inte ur koden.
+
+Seed-kontona (`scripts/seed-dev-users.sql`, lösenord i `.env.development`)
+loggas in från utvecklingspanelen på `/logga-in`, som bara finns i dev-läge --
+spärren `import.meta.env.DEV` sitter på anropsstället, inte i komponenten.
+Kontona raderas före lansering.
+
 ## Regler som inte får brytas (bakgrund i ritningen)
 
 1. AI-bedömningen visas aldrig för någon utom plattformsadmin i kalibreringsvyn.

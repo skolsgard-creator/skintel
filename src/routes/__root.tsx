@@ -1,4 +1,6 @@
-import { createRootRoute, Outlet, Link } from "@tanstack/react-router";
+import { createRootRoute, Outlet, Link, useRouter } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Display, Eyebrow, Page } from "@/components/ui/page";
 
@@ -10,6 +12,20 @@ export const Route = createRootRoute({
 });
 
 function RootLayout() {
+  const router = useRouter();
+
+  // När sessionen ändras (utloggning i en annan flik, token som gått ut,
+  // tvåfaktor passerad) körs routernas grindar om, så att ingen vy står
+  // kvar med ett tillstånd databasen inte längre håller med om.
+  useEffect(() => {
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT" || event === "MFA_CHALLENGE_VERIFIED") {
+        void router.invalidate();
+      }
+    });
+    return () => data.subscription.unsubscribe();
+  }, [router]);
+
   return (
     <div className="min-h-dvh bg-background text-foreground">
       <Outlet />
