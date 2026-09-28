@@ -112,6 +112,45 @@ för 3D-delen, 114 kB per kropp (86 gz; bara den valda hämtas), 8 kB omslag.
 Spiken är inte avgjord förrän telefonmätningen är gjord; faller den byggs
 2D-kartan i SVG mot samma kontrakt.
 
+## Inskicket (steg 3.2)
+
+Patientens inskick är RPC:n `submit_lesion_review(spot, images, symptoms, note)`
+(migration `20260928202000`). Rätten att skicka in avgörs där, aldrig i
+klienten: aktivt medlemskap i en aktiv organisation med aktivt avtal inom
+perioden, eller ett betalt oanvänt köp (`submission_entitlement()`, intern;
+`my_submission_entitlement()` för klienten, som bara väljer väg efter svaret).
+Potten spärrar aldrig; `subscriptions` räknas inte (planerna kommer med M8).
+Svaret är en utfallskod (`ok`, `no_entitlement`, `terms_not_accepted`,
+`profile_incomplete`, `spot_not_found`, `case_already_open`, `images_invalid`,
+`image_not_owned`, `image_not_found`, `note_too_long`), inte ett undantag;
+ogiltiga symtomvärden faller på CHECK-villkoren.
+
+Fotona (1–3, sorter översikt/närbild/skala; omtag senare) laddas upp av
+klienten till `skin-photos/<uid>/…` före anropet och ligger i `review_images`
+(`20260928200000`); `lesion_reviews.image_path` är huvudbilden (närbilden).
+Varje ärende har minst ett foto -- en uppskjuten constraint-trigger
+(`20260928203000`) stoppar committen annars, så klienten har en väg, inte två.
+Bilddörren per foto är `request_review_image(image_id)`, samma regler som
+`request_case_image`. Anamnesen fryses ur profilen i anropet (samma elva fält
+och version som hud-koll). Symtomfrågorna har tre lägen (`ja`/`nej`/`vet_ej`,
+NULL = obesvarat). Svarslöftet: avtalets arbetsdagar, annars 24 timmar alla
+dagar (privatkund). Notisen `case_received` läggs i outboxen av triggern.
+
+Bedömningen `submit_review_verdict(review, outcome, verdict, skin_type,
+followup_weeks)` (`20260928201000`) skriver ett av fem utfall
+(`dermatologist_outcome`: lag/mattlig/forhojd/needs_in_person; risknivån är
+delmängden) och läkarens uppföljningstid för just det ärendet -- obligatorisk,
+0 = ingen uppföljning, aktivt valt. `answer_insufficient_images(review, reasons)`
+kräver orsaker ur listan i `retake_reasons`. Kontroll 34–40 i
+`scripts/kolla-rls.sql` provar inskicket under riktiga roller; seedskriptet
+ger Testbolaget ett avtal, admin-kontot ett betalt köp och båda ett
+platshållarfoto i lagringen.
+
+Lokal provkörning av migrationerna: hela kedjan går att spela upp i en vanlig
+Postgres med ett litet Supabase-skal (roller, `auth.uid()`, `storage.objects`);
+`20260812143321` är en dubblett av `20260810142457` och `20260906230000`
+kräver pg_cron/pg_net -- båda hoppas över lokalt.
+
 ## Regler som inte får brytas (bakgrund i ritningen)
 
 1. AI-bedömningen visas aldrig för någon utom plattformsadmin i kalibreringsvyn.

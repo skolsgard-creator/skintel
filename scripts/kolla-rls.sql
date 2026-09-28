@@ -39,7 +39,29 @@ SELECT
   (SELECT lr.id FROM public.lesion_reviews lr
     WHERE lr.reviewer_id IS DISTINCT FROM (SELECT id FROM auth.users WHERE email='dermatolog@skintel.test')
     LIMIT 1) AS otilldelat_arende,
-  (SELECT lr.id FROM public.lesion_reviews lr LIMIT 1) AS nagot_arende;
+  (SELECT lr.id FROM public.lesion_reviews lr LIMIT 1) AS nagot_arende,
+  -- Steg 3.2: privatköparen (admin-kontot i seed), fläckar och foton att
+  -- skicka in med. Slås upp som postgres: storage.objects är stängd för
+  -- authenticated (kontroll 11), och fläckarna ska vara just de fria.
+  (SELECT id FROM auth.users WHERE email='admin@skintel.test') AS privatkopare,
+  (SELECT s.id FROM public.spots s
+    WHERE s.user_id = (SELECT id FROM auth.users WHERE email='anvandare@skintel.test')
+      AND NOT EXISTS (SELECT 1 FROM public.lesion_reviews lr
+                       WHERE lr.spot_id = s.id AND lr.status IN ('pending','in_review'))
+    LIMIT 1) AS patient_fri_flack,
+  (SELECT s.id FROM public.spots s
+    WHERE s.user_id = (SELECT id FROM auth.users WHERE email='admin@skintel.test')
+      AND NOT EXISTS (SELECT 1 FROM public.lesion_reviews lr
+                       WHERE lr.spot_id = s.id AND lr.status IN ('pending','in_review'))
+    LIMIT 1) AS kopare_fri_flack,
+  (SELECT o.name FROM storage.objects o
+    WHERE o.bucket_id='skin-photos'
+      AND o.name LIKE (SELECT id FROM auth.users WHERE email='anvandare@skintel.test')::text || '/%'
+    LIMIT 1) AS patient_foto,
+  (SELECT o.name FROM storage.objects o
+    WHERE o.bucket_id='skin-photos'
+      AND o.name LIKE (SELECT id FROM auth.users WHERE email='admin@skintel.test')::text || '/%'
+    LIMIT 1) AS kopare_foto;
 
 CREATE TEMP TABLE _resultat(n int, kontroll text, utfall text);
 GRANT SELECT ON _aktorer TO authenticated;
@@ -442,6 +464,243 @@ BEGIN
 END $$;
 
 RESET ROLE;
+
+/* =====================================================================
+   34-39. Inskicket bor i databasen (steg 3.2, 20260928200000-202000).
+
+   Alla anrop av submit_lesion_review() görs i en subtransaktion som
+   avslutas med ett RAISE som bär utfallet i felmeddelandet: ärendet,
+   fotoraderna, outboxraden och det förbrukade köpet rullas tillbaka,
+   resultatet bevaras. Filen förblir läsande.
+   ===================================================================== */
+SET ROLE authenticated;
+
+-- 34. Utan medlemskap och utan köp: nekad, före allt annat. Granskarkontot
+--     är ingen medlem och har inget köp.
+SELECT set_config('request.jwt.claims', json_build_object('sub',(SELECT granskare FROM _aktorer))::text, false);
+DO $$
+DECLARE _out text;
+BEGIN
+  IF (SELECT granskare FROM _aktorer) IS NULL THEN
+    INSERT INTO _resultat VALUES (34,'utan rätt nekas inskicket','ÖVERHOPPAD'); RETURN;
+  END IF;
+  BEGIN
+    SELECT r.outcome INTO _out FROM public.submit_lesion_review(
+      '00000000-0000-0000-0000-000000000000', '[]'::jsonb, '{}'::jsonb, NULL) r;
+    RAISE EXCEPTION USING MESSAGE = 'utfall:' || coalesce(_out,'null');
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM LIKE 'utfall:%' THEN
+      INSERT INTO _resultat VALUES (34,'utan rätt nekas inskicket',
+        CASE WHEN substr(SQLERRM, 8) = 'no_entitlement' THEN 'OK' ELSE 'FEL: '||substr(SQLERRM, 8) END);
+    ELSE
+      INSERT INTO _resultat VALUES (34,'utan rätt nekas inskicket','FEL: '||SQLERRM);
+    END IF;
+  END;
+  INSERT INTO _resultat VALUES (34,'my_submission_entitlement() säger nej',
+    CASE WHEN public.my_submission_entitlement() IS NULL THEN 'OK' ELSE 'FEL: '||public.my_submission_entitlement() END);
+END $$;
+
+-- 35. Patienten, medlem med aktivt avtal: ett riktigt inskick ger ett ärende
+--     med fryst anamnes, fotorad, svarslöfte och notisraden 'case_received'
+--     i outboxen. Outboxen är stängd för authenticated, så blocket körs som
+--     postgres och byter roll bara för själva anropet.
+RESET ROLE;
+DO $$
+DECLARE _p uuid := (SELECT patient FROM _aktorer);
+        _flack uuid := (SELECT patient_fri_flack FROM _aktorer);
+        _foto text := (SELECT patient_foto FROM _aktorer);
+        _out text; _id uuid; _utfall text;
+BEGIN
+  IF _p IS NULL THEN
+    INSERT INTO _resultat VALUES (35,'medlem med avtal får skicka in','ÖVERHOPPAD'); RETURN;
+  END IF;
+  IF _flack IS NULL OR _foto IS NULL THEN
+    INSERT INTO _resultat VALUES (35,'medlem med avtal får skicka in','ÖVERHOPPAD -- seed-patienten saknar fri fläck eller foto i lagringen'); RETURN;
+  END IF;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM set_config('request.jwt.claims', json_build_object('sub', _p)::text, true);
+    -- Först med ett foto som inte finns i lagringen: ska avvisas som helhet.
+    SELECT r.outcome INTO _out FROM public.submit_lesion_review(
+      _flack,
+      jsonb_build_array(jsonb_build_object('path', _foto, 'kind', 'oversikt'),
+                        jsonb_build_object('path', _foto || '.finns-inte', 'kind', 'narbild')),
+      '{}'::jsonb, NULL) r;
+    _utfall := 'okänt foto: ' || coalesce(_out,'null');
+    -- Sedan på riktigt.
+    SELECT r.outcome, r.review_id INTO _out, _id FROM public.submit_lesion_review(
+      _flack,
+      jsonb_build_array(jsonb_build_object('path', _foto, 'kind', 'narbild')),
+      jsonb_build_object('duration', '1_till_6_manader', 'has_changed', 'vet_ej',
+                         'itching_burning_pain', 'nej', 'bleeding_oozing', 'nej',
+                         'healed_and_returned', 'vet_ej', 'ugly_duckling', 'ja'),
+      'kolla-rls provinskick') r;
+    EXECUTE 'RESET ROLE';
+    _utfall := _utfall || '; inskick: ' || coalesce(_out,'null');
+    IF _out = 'ok' THEN
+      _utfall := _utfall
+        || '; anamnes ' || CASE WHEN EXISTS (SELECT 1 FROM public.lesion_reviews lr WHERE lr.id = _id
+                                               AND lr.anamnesis ? 'skin_type' AND (lr.anamnesis ->> 'age') IS NOT NULL
+                                               AND lr.anamnesis_version IS NOT NULL) THEN 'fryst' ELSE 'SAKNAS' END
+        || '; foton ' || (SELECT count(*) FROM public.review_images ri WHERE ri.lesion_review_id = _id)
+        || '; förfall ' || CASE WHEN EXISTS (SELECT 1 FROM public.lesion_reviews lr WHERE lr.id = _id AND lr.response_due_at > now()) THEN 'satt' ELSE 'SAKNAS' END
+        || '; notis ' || CASE WHEN EXISTS (SELECT 1 FROM public.notification_outbox o
+                                            WHERE o.lesion_review_id = _id AND o.kind = 'case_received') THEN 'i outboxen' ELSE 'SAKNAS' END;
+    END IF;
+    RAISE EXCEPTION USING MESSAGE = 'utfall:' || _utfall;
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM LIKE 'utfall:%' THEN
+      INSERT INTO _resultat VALUES (35,'medlem med avtal får skicka in',
+        CASE WHEN substr(SQLERRM, 8) = 'okänt foto: image_not_found; inskick: ok; anamnes fryst; foton 1; förfall satt; notis i outboxen'
+             THEN 'OK: ' || substr(SQLERRM, 8) ELSE 'FEL: ' || substr(SQLERRM, 8) END);
+    ELSE
+      INSERT INTO _resultat VALUES (35,'medlem med avtal får skicka in','FEL: '||SQLERRM);
+    END IF;
+  END;
+END $$;
+
+-- 36-37. Patienten igen, under RLS.
+SET ROLE authenticated;
+SELECT set_config('request.jwt.claims', json_build_object('sub',(SELECT patient FROM _aktorer))::text, false);
+INSERT INTO _resultat
+SELECT 35,'my_submission_entitlement() säger organisation',
+       CASE WHEN public.my_submission_entitlement() = 'organisation' THEN 'OK'
+            ELSE 'FEL: '||coalesce(public.my_submission_entitlement(),'null')||' -- saknar Testbolaget ett aktivt avtal? (seed-dev-users.sql)' END;
+DO $$
+DECLARE _g uuid := (SELECT granskare FROM _aktorer);
+        _flack uuid := (SELECT patient_fri_flack FROM _aktorer);
+        _foto text := (SELECT patient_foto FROM _aktorer);
+        _out text;
+BEGIN
+  IF (SELECT patient FROM _aktorer) IS NULL OR _flack IS NULL OR _foto IS NULL THEN
+    INSERT INTO _resultat VALUES (36,'annans fläck avvisas','ÖVERHOPPAD');
+    INSERT INTO _resultat VALUES (37,'annans foto avvisas','ÖVERHOPPAD'); RETURN;
+  END IF;
+
+  -- 36. Annans fläck avvisas.
+  BEGIN
+    SELECT r.outcome INTO _out FROM public.submit_lesion_review(
+      gen_random_uuid(), jsonb_build_array(jsonb_build_object('path', _foto, 'kind', 'narbild')),
+      '{}'::jsonb, NULL) r;
+    RAISE EXCEPTION USING MESSAGE = 'utfall:' || coalesce(_out,'null');
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM LIKE 'utfall:%' THEN
+      INSERT INTO _resultat VALUES (36,'annans fläck avvisas',
+        CASE WHEN substr(SQLERRM, 8) = 'spot_not_found' THEN 'OK' ELSE 'FEL: '||substr(SQLERRM, 8) END);
+    ELSE
+      INSERT INTO _resultat VALUES (36,'annans fläck avvisas','FEL: '||SQLERRM);
+    END IF;
+  END;
+
+  -- 37. Annans foto avvisas, före uppslaget i lagringen.
+  BEGIN
+    SELECT r.outcome INTO _out FROM public.submit_lesion_review(
+      _flack, jsonb_build_array(jsonb_build_object('path', _g::text || '/x.jpg', 'kind', 'narbild')),
+      '{}'::jsonb, NULL) r;
+    RAISE EXCEPTION USING MESSAGE = 'utfall:' || coalesce(_out,'null');
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM LIKE 'utfall:%' THEN
+      INSERT INTO _resultat VALUES (37,'annans foto avvisas',
+        CASE WHEN substr(SQLERRM, 8) = 'image_not_owned' THEN 'OK' ELSE 'FEL: '||substr(SQLERRM, 8) END);
+    ELSE
+      INSERT INTO _resultat VALUES (37,'annans foto avvisas','FEL: '||SQLERRM);
+    END IF;
+  END;
+END $$;
+
+-- 38. Privatköparen: köpet betalar ett ärende, och bara ett.
+SELECT set_config('request.jwt.claims', json_build_object('sub',(SELECT privatkopare FROM _aktorer))::text, false);
+DO $$
+DECLARE _k uuid := (SELECT privatkopare FROM _aktorer);
+        _flack uuid := (SELECT kopare_fri_flack FROM _aktorer);
+        _foto text := (SELECT kopare_foto FROM _aktorer);
+        _forst text; _andra text;
+BEGIN
+  IF _k IS NULL OR _flack IS NULL OR _foto IS NULL THEN
+    INSERT INTO _resultat VALUES (38,'ett köp betalar exakt ett ärende','ÖVERHOPPAD -- privatköparen (admin@skintel.test) saknar fläck eller foto'); RETURN;
+  END IF;
+  IF public.my_submission_entitlement() IS DISTINCT FROM 'kop' THEN
+    INSERT INTO _resultat VALUES (38,'ett köp betalar exakt ett ärende',
+      'ÖVERHOPPAD -- privatköparen har inget betalt köp (seed-dev-users.sql), fick: '||coalesce(public.my_submission_entitlement(),'null')); RETURN;
+  END IF;
+  BEGIN
+    SELECT r.outcome INTO _forst FROM public.submit_lesion_review(
+      _flack, jsonb_build_array(jsonb_build_object('path', _foto, 'kind', 'narbild')), '{}'::jsonb, NULL) r;
+    -- Samma fläck igen: hade köpet inte förbrukats vore svaret case_already_open.
+    SELECT r.outcome INTO _andra FROM public.submit_lesion_review(
+      _flack, jsonb_build_array(jsonb_build_object('path', _foto, 'kind', 'narbild')), '{}'::jsonb, NULL) r;
+    RAISE EXCEPTION USING MESSAGE = 'utfall:' || coalesce(_forst,'null') || '/' || coalesce(_andra,'null');
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM LIKE 'utfall:%' THEN
+      INSERT INTO _resultat VALUES (38,'ett köp betalar exakt ett ärende',
+        CASE WHEN substr(SQLERRM, 8) = 'ok/no_entitlement' THEN 'OK: ok, sedan no_entitlement' ELSE 'FEL: '||substr(SQLERRM, 8) END);
+    ELSE
+      INSERT INTO _resultat VALUES (38,'ett köp betalar exakt ett ärende','FEL: '||SQLERRM);
+    END IF;
+  END;
+END $$;
+
+-- 39. Fotona följer ärendets behörighet: patienten ser sina egna, granskaren
+--     bara det antagna ärendets, och den interna rättighetsfunktionen är
+--     stängd för authenticated.
+SELECT set_config('request.jwt.claims', json_build_object('sub',(SELECT patient FROM _aktorer))::text, false);
+INSERT INTO _resultat
+SELECT 39,'patient ser bara egna review_images',
+       CASE WHEN count(*) FILTER (WHERE user_id <> (SELECT patient FROM _aktorer)) = 0
+            THEN 'OK: '||count(*)||' egna' ELSE 'FEL: andras foton synliga' END
+  FROM public.review_images;
+SELECT set_config('request.jwt.claims', json_build_object('sub',(SELECT granskare FROM _aktorer),'aal','aal2')::text, false);
+INSERT INTO _resultat
+SELECT 39,'granskare ser inga foton för oantagna ärenden',
+       CASE WHEN count(*)=0 THEN 'OK' ELSE 'FEL: '||count(*) END
+  FROM public.review_images ri
+ WHERE ri.lesion_review_id IN (SELECT id FROM public.review_queue);
+DO $$
+BEGIN
+  BEGIN
+    PERFORM public.submission_entitlement((SELECT patient FROM _aktorer));
+    INSERT INTO _resultat VALUES (39,'submission_entitlement() är inte anropbar av authenticated','FEL: anropbar');
+  EXCEPTION WHEN insufficient_privilege THEN
+    INSERT INTO _resultat VALUES (39,'submission_entitlement() är inte anropbar av authenticated','OK: nekad');
+  END;
+END $$;
+
+RESET ROLE;
+
+/* ---------------------------------------------------------------------
+   40. Varje ärende har minst ett foto (20260928203000): som tillstånd i
+       databasen just nu, och som spärr -- ett ärende utan foto går inte
+       att committa. Spärren är uppskjuten till COMMIT, så i provet görs
+       den omedelbar (SET CONSTRAINTS ALL IMMEDIATE) inne i en
+       subtransaktion som ändå rullas tillbaka. Körs som postgres: det är
+       skrivningar förbi RPC:n som invarianten finns till för.
+   --------------------------------------------------------------------- */
+INSERT INTO _resultat
+SELECT 40,'varje ärende har minst ett foto i review_images',
+       CASE WHEN count(*)=0 THEN 'OK' ELSE 'FEL: '||count(*)||' ärenden utan foto' END
+  FROM public.lesion_reviews lr
+ WHERE NOT EXISTS (SELECT 1 FROM public.review_images ri WHERE ri.lesion_review_id = lr.id);
+
+DO $$
+DECLARE _p    uuid := (SELECT patient FROM _aktorer);
+        _spot uuid := (SELECT patient_fri_flack FROM _aktorer);
+BEGIN
+  IF _p IS NULL OR _spot IS NULL THEN
+    INSERT INTO _resultat VALUES (40,'ärende utan foto går inte att committa','ÖVERHOPPAD -- seed-patienten saknar fri fläck');
+    RETURN;
+  END IF;
+  BEGIN
+    SET CONSTRAINTS ALL IMMEDIATE;
+    INSERT INTO public.lesion_reviews (user_id, spot_id, image_path, status)
+    VALUES (_p, _spot, _p::text || '/utan-foto.jpg', 'pending');
+    RAISE EXCEPTION 'gick_igenom';
+  EXCEPTION
+    WHEN OTHERS THEN
+      INSERT INTO _resultat VALUES (40,'ärende utan foto går inte att committa',
+        CASE WHEN SQLERRM = 'case_without_photo' THEN 'OK: case_without_photo'
+             ELSE 'FEL: '||SQLERRM END);
+  END;
+END $$;
 
 SELECT n, kontroll, utfall,
        CASE WHEN utfall LIKE 'FEL%' THEN '<<<<<' ELSE '' END AS flagga

@@ -151,15 +151,66 @@ BEGIN
   ON CONFLICT (organization_id, user_id) DO UPDATE
     SET role = 'employee', status = 'active', activated_at = now();
 
-  -- Aktivt avtal på organisationen -- utan det stoppar requireEntitlement varje
-  -- inskickning, och då går inte användarflödet att testa.
+  -- Aktivt avtal på organisationen. Rätten att skicka in (submit_lesion_review,
+  -- 20260928202000) kräver medlemskap + aktivt avtal inom perioden; de gamla
+  -- subscriptions-raderna räknas inte (platsmodellen bygger på avtal). Utan
+  -- avtalet nekas varje inskick från seed-patienten.
   IF NOT EXISTS (
-    SELECT 1 FROM public.subscriptions
-     WHERE organization_id = _org_id AND status = 'active'
+    SELECT 1 FROM public.organization_agreements
+     WHERE organization_id = _org_id AND status = 'aktivt'
   ) THEN
-    INSERT INTO public.subscriptions (organization_id, tier, status)
-    VALUES (_org_id, 'premium', 'active');
+    INSERT INTO public.organization_agreements
+      (organization_id, contract_number, starts_on, ends_on, seats, analysis_pot,
+       response_time_days, price_per_seat_ore, annual_fee_ore, status,
+       customer_contact_name, customer_contact_email)
+    VALUES
+      (_org_id, 'SEED-TESTBOLAGET', CURRENT_DATE - 30, CURRENT_DATE + 335, 10, 20,
+       5, 45000, 450000, 'aktivt', 'Dev HR', 'organisation@skintel.test');
   END IF;
+
+  -- Villkoren godkända för alla fyra: inskicket kräver det. Direkt insert och
+  -- inte record_terms_acceptance(), som läser auth.uid() -- vi kör som postgres.
+  INSERT INTO public.terms_acceptances (user_id, terms_version, privacy_version)
+  SELECT u, (SELECT max(version) FROM public.legal_documents WHERE document = 'villkor'),
+            (SELECT max(version) FROM public.legal_documents WHERE document = 'integritetspolicy')
+    FROM unnest(ARRAY[_admin_id, _derm_id, _hr_id, _user_id]) AS u
+  ON CONFLICT (user_id, terms_version, privacy_version) DO NOTHING;
+
+  -- Admin-kontot dubblerar som PRIVATKUND i testerna: ingen organisation, ett
+  -- betalt oanvänt köp. Väljs framför ett femte konto -- dev-panelen har fyra
+  -- knappar, och kolla-rls behöver bara ett konto utan medlemskap.
+  IF NOT EXISTS (
+    SELECT 1 FROM public.one_time_purchases WHERE user_id = _admin_id AND status = 'paid'
+  ) THEN
+    INSERT INTO public.one_time_purchases (user_id, status, provider, provider_order_id, amount_ore, paid_at)
+    VALUES (_admin_id, 'paid', 'seed', 'seed-' || _admin_id::text, 25000, now());
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.spots WHERE user_id = _admin_id) THEN
+    INSERT INTO public.spots (user_id, name, body_location, region_key, body_side)
+    VALUES (_admin_id, 'Seed: privatköp', 'Överarm', 'overarm', 'hoger');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.spots WHERE user_id = _user_id AND name = 'Seed: ny fläck') THEN
+    INSERT INTO public.spots (user_id, name, body_location, region_key, body_side)
+    VALUES (_user_id, 'Seed: ny fläck', 'Mage', 'mage', 'mitten');
+  END IF;
+
+  -- Platshållarobjekt i lagringen, ett per konto som ska kunna skicka in i
+  -- testerna: submit_lesion_review() kontrollerar att fotot finns i
+  -- storage.objects. Raden pekar på en fil som inte finns (signerad URL ger
+  -- 404); ärendets tillstånd går att testa, bilden gör det inte. Misslyckas
+  -- inserten (rättigheter i storage-schemat) hoppas den över med ett NOTICE,
+  -- och kolla-rls hoppar då över de kontroller som behöver ett foto.
+  BEGIN
+    INSERT INTO storage.objects (bucket_id, name, owner, metadata)
+    SELECT 'skin-photos', u::text || '/seed-platshallare.jpg', u, '{"seed":true}'::jsonb
+      FROM unnest(ARRAY[_user_id, _admin_id]) AS u
+     WHERE NOT EXISTS (
+       SELECT 1 FROM storage.objects o
+        WHERE o.bucket_id = 'skin-photos' AND o.name LIKE u::text || '/%'
+     );
+  EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'Kunde inte skapa platshållarobjekt i storage (%): kontrollerna som kräver foto hoppas över.', SQLERRM;
+  END;
 
   RAISE NOTICE 'Klart. Fyra konton, lösenord: %', _pw;
 END $$;
@@ -233,6 +284,12 @@ BEGIN
        now() - interval '2 hours', 1, NULL)
     RETURNING id INTO _rev;
 
+    -- Varje ärende har minst ett foto (20260928203000): ett ärende som skrivs
+    -- förbi submit_lesion_review() får sin huvudbild här, annars faller
+    -- committen på invarianten.
+    INSERT INTO public.review_images (lesion_review_id, user_id, storage_path, kind, position, created_at)
+    VALUES (_rev, _user_id, _img, 'narbild', 1, now() - interval '14 days');
+
     INSERT INTO public.lesion_review_events (lesion_review_id, actor_id, event, reason, at)
     VALUES (_rev, _derm_id, 'claimed',  NULL,             now() - interval '5 days'),
            (_rev, _derm_id, 'released', 'ater_ej_bedomd', now() - interval '2 hours');
@@ -249,18 +306,29 @@ BEGIN
     VALUES (_user_id, 'Seed: underlag räcker inte', 'Rygg', 'rygg', 'mitten')
     RETURNING id INTO _spot;
 
+    -- retake_reasons (20260928201000): patientens omtagsinstruktion. Gamla
+    -- ärenden saknar den; ett seedärende ska visa hur svaret ser ut.
     INSERT INTO public.lesion_reviews
       (user_id, spot_id, image_path, status, organization_id, created_at,
-       reviewer_id, claimed_at, answered_at)
+       reviewer_id, claimed_at, answered_at, retake_reasons)
     VALUES
       (_user_id, _spot, _img, 'insufficient_images', _org_id, now() - interval '3 days',
-       _derm_id, now() - interval '1 day', now() - interval '1 day')
+       _derm_id, now() - interval '1 day', now() - interval '1 day',
+       ARRAY['oskarp', 'behover_skala'])
     RETURNING id INTO _rev;
+
+    INSERT INTO public.review_images (lesion_review_id, user_id, storage_path, kind, position, created_at)
+    VALUES (_rev, _user_id, _img, 'narbild', 1, now() - interval '3 days');
 
     INSERT INTO public.lesion_review_events (lesion_review_id, actor_id, event, at)
     VALUES (_rev, _derm_id, 'claimed',               now() - interval '1 day'),
            (_rev, _derm_id, 'answered_insufficient', now() - interval '1 day');
   END IF;
+
+  -- Ett seedärende skapat före 20260928201000 saknar orsaker; ge det dem.
+  UPDATE public.lesion_reviews
+     SET retake_reasons = ARRAY['oskarp', 'behover_skala']
+   WHERE user_id = _user_id AND status = 'insufficient_images' AND retake_reasons IS NULL;
 
   RAISE NOTICE 'Köärenden på plats: ett återlämnat, ett med otillräckligt underlag.';
 END $ko$;
