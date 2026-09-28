@@ -86,6 +86,32 @@ loggas in från utvecklingspanelen på `/logga-in`, som bara finns i dev-läge -
 spärren `import.meta.env.DEV` sitter på anropsstället, inte i komponenten.
 Kontona raderas före lansering.
 
+## Kroppsfiguren (steg 3.1, prov)
+
+Figuren är en egen modul i `src/figur/` med ett kontrakt (`kontrakt.ts`):
+region, sida, punkt och normal in och ut, samma nycklar och samma rymd som
+`spots` i databasen (fötter på y = 0, hjässan 1,93, z+ fram, x+ figurens
+vänstra sida). Resten av appen talar bara kontraktet, så 2D-kartan kan bytas
+in utan att något annat rörs. Tre kroppar -- neutral, kvinna, man -- görs av
+`scripts/rita-figur.py` ur MakeHumans basmodell och makrotargets
+(`assets/figur/makehuman/`, CC0; ursprunget står i `assets/figur/README.md`):
+morfning, skalning, armarna fällda till 22°, kvadrisk förenkling till
+12 000 trianglar, och en region per hörn ur ett kapselskelett byggt av
+modellens egna ledmarkörer. Utdata: `public/figur/figur-<kropp>.bin` och
+`src/figur/figur-data.ts` (regionlista; per kropp fokuspunkter och siluett).
+En markering hör till en kropps rymd: byts kroppen börjar figuren tom.
+3D-renderingen (`figur-3d.ts`) är three.js-kärnan utan react-three-fiber,
+hämtas först när figuren monteras och ritar bara när något rör sig.
+Siluetten (`siluett.tsx`) står på skärmen tills 3D:n är uppe.
+
+Provsidan `/dev/figur` visar mätvärdena och växlar kropp. Mätbygget
+`bun run build:prov` + `bun run preview` behåller den sidan med riktig
+minifiering. Kraven (ritning v2, 3.1): under 300 kB, första bild inom 2 s på
+en Android i mellanklass, 60 fps vid vridning. Bygget 2026-09-28: 135 kB gz
+för 3D-delen, 114 kB per kropp (86 gz; bara den valda hämtas), 8 kB omslag.
+Spiken är inte avgjord förrän telefonmätningen är gjord; faller den byggs
+2D-kartan i SVG mot samma kontrakt.
+
 ## Regler som inte får brytas (bakgrund i ritningen)
 
 1. AI-bedömningen visas aldrig för någon utom plattformsadmin i kalibreringsvyn.

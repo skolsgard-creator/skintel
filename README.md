@@ -19,6 +19,15 @@ npx supabase db push                                     # nya migrationer
 npx supabase db query --linked -f scripts/kolla-rls.sql  # behörighetskontrollerna
 ```
 
+Kroppsfiguren (steg 3.1) mäts i ett bygge som behåller provsidan `/dev/figur`:
+
+```bash
+bun run build:prov && bun run preview   # öppna http://<datorns LAN-adress>:8080/dev/figur i mobilen
+```
+
+Kropparna genereras om ur MakeHumans basmodell (`assets/figur/makehuman/`) med
+`python3 scripts/rita-figur.py` (pip install numpy scipy scikit-image trimesh fast-simplification).
+
 Bildjämförelse av designsystemet (första gången: `bunx playwright install chromium`):
 
 ```bash

@@ -49,6 +49,7 @@ export default defineConfig({
         // main.tsx och faller då utanför listan.
         globIgnores: [
           "**/ui-*.js",
+          "**/figur-*.js",
           "**/identitet-*.{js,css}",
           "**/page-*.js",
           "**/familjen-grotesk-*.woff2",

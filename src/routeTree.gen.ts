@@ -19,6 +19,7 @@ import { Route as OrganisationRouteRouteImport } from './routes/organisation/rou
 import { Route as TvafaktorRouteImport } from './routes/tvafaktor'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AppIndexRouteImport } from './routes/app/index'
+import { Route as DevFigurRouteImport } from './routes/dev/figur'
 import { Route as DevIdentitetRouteImport } from './routes/dev/identitet'
 import { Route as DevUiRouteImport } from './routes/dev/ui'
 import { Route as GranskaIndexRouteImport } from './routes/granska/index'
@@ -74,6 +75,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const DevFigurRoute = DevFigurRouteImport.update({
+  id: '/dev/figur',
+  path: '/dev/figur',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DevIdentitetRoute = DevIdentitetRouteImport.update({
   id: '/dev/identitet',
   path: '/dev/identitet',
@@ -104,6 +110,7 @@ export interface FileRoutesByFullPath {
   '/inbjudan': typeof InbjudanRoute
   '/logga-in': typeof LoggaInRoute
   '/tvafaktor': typeof TvafaktorRoute
+  '/dev/figur': typeof DevFigurRoute
   '/dev/identitet': typeof DevIdentitetRoute
   '/dev/ui': typeof DevUiRoute
   '/admin/': typeof AdminIndexRoute
@@ -116,6 +123,7 @@ export interface FileRoutesByTo {
   '/inbjudan': typeof InbjudanRoute
   '/logga-in': typeof LoggaInRoute
   '/tvafaktor': typeof TvafaktorRoute
+  '/dev/figur': typeof DevFigurRoute
   '/dev/identitet': typeof DevIdentitetRoute
   '/dev/ui': typeof DevUiRoute
   '/admin': typeof AdminIndexRoute
@@ -133,6 +141,7 @@ export interface FileRoutesById {
   '/inbjudan': typeof InbjudanRoute
   '/logga-in': typeof LoggaInRoute
   '/tvafaktor': typeof TvafaktorRoute
+  '/dev/figur': typeof DevFigurRoute
   '/dev/identitet': typeof DevIdentitetRoute
   '/dev/ui': typeof DevUiRoute
   '/admin/': typeof AdminIndexRoute
@@ -151,6 +160,7 @@ export interface FileRouteTypes {
     | '/inbjudan'
     | '/logga-in'
     | '/tvafaktor'
+    | '/dev/figur'
     | '/dev/identitet'
     | '/dev/ui'
     | '/admin/'
@@ -163,6 +173,7 @@ export interface FileRouteTypes {
     | '/inbjudan'
     | '/logga-in'
     | '/tvafaktor'
+    | '/dev/figur'
     | '/dev/identitet'
     | '/dev/ui'
     | '/admin'
@@ -179,6 +190,7 @@ export interface FileRouteTypes {
     | '/inbjudan'
     | '/logga-in'
     | '/tvafaktor'
+    | '/dev/figur'
     | '/dev/identitet'
     | '/dev/ui'
     | '/admin/'
@@ -196,6 +208,7 @@ export interface RootRouteChildren {
   InbjudanRoute: typeof InbjudanRoute
   LoggaInRoute: typeof LoggaInRoute
   TvafaktorRoute: typeof TvafaktorRoute
+  DevFigurRoute: typeof DevFigurRoute
   DevIdentitetRoute: typeof DevIdentitetRoute
   DevUiRoute: typeof DevUiRoute
 }
@@ -271,6 +284,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/'
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRouteRoute
+    }
+    '/dev/figur': {
+      id: '/dev/figur'
+      path: '/dev/figur'
+      fullPath: '/dev/figur'
+      preLoaderRoute: typeof DevFigurRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/dev/identitet': {
       id: '/dev/identitet'
@@ -359,6 +379,7 @@ const rootRouteChildren: RootRouteChildren = {
   InbjudanRoute: InbjudanRoute,
   LoggaInRoute: LoggaInRoute,
   TvafaktorRoute: TvafaktorRoute,
+  DevFigurRoute: DevFigurRoute,
   DevIdentitetRoute: DevIdentitetRoute,
   DevUiRoute: DevUiRoute,
 }
