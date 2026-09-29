@@ -190,6 +190,39 @@ y4m-filerna: skarp, suddig, mörk) och Supabase fejkat vid nätverksgränsen.
 Det skarpa provet är telefonen mot riktiga databasen: `/dev`-panelens
 patient har avtal via Testbolaget.
 
+## Ärendet och brevet (steg 3.4)
+
+`/app/arenden` (en rad per fläck, senaste kontrollen, öppna först),
+`/app/arende/$id` (en kontroll: brevet, instruktionerna för nya bilder eller
+klockan överst; tidslinjen, fotona, patientens svar och tidigare kontroller
+av samma fläck under) och `/app/flack/$id` (till fläckens senaste kontroll).
+`/hem` och `/flack/$id` leder in i appen: det är adresserna mejlen från
+`notisutskick` länkar till (hud-kolls vägar), så länkarna fungerar utan att
+edge-funktionen ändras. Utloggad går vägen via `/logga-in?till=…`; både
+kodvägen och dev-panelen följer `till` tillbaka.
+
+Logiken är rena, testade funktioner i `src/arenden/`: `tidslinje.ts`,
+`klocka.ts` och `datum.ts` (alltid svensk tid), `utfall.ts` (ord och piller;
+den varma accenten för förhöjd, på plats och nya bilder), `brevtext.ts`,
+`lista.ts`. `data.ts` läser under RLS med uttryckliga kolumnlistor -- aldrig
+`*`, så AI-kolumnerna kan inte ens efterfrågas -- filtrerat på den inloggades
+user_id, och signerar fotona i webbläsaren under "own folder read" (egna
+visningar loggas inte). "Antagen" visas utan namn: `case_reviewer` lämnar ut
+namnet först när ärendet är avslutat (20260906160000).
+
+Brevet (`brev.tsx`, ritning v2 avsnitt 3): brevhuvud med ordmärket, läkarens
+text ordagrant i Source Serif 4, utfallet och uppföljningen på egna rader,
+namn och titel, "Så går du vidare" vid förhöjd risk och på plats, ren
+utskrift (`print:`-varianter; bara brevet skrivs ut). Serifen hämtas med
+brevet och förcachas (bara latin). Inget i brevet lovar det som inte finns:
+följdfråga (3.5), episodknappar och påminnelse (3.6), remiss och recept
+(4.2). Knappen för nya bilder i samma ärende kommer i 4.2.
+
+Före granskarvyn besvaras testärenden med `scripts/besvara-testarende.sql`
+(seed-dermatologen, riktiga funktioner, bara @skintel.test-konton; utfall,
+text och veckor under ÄNDRA HÄR). `scripts/prov-arende.mjs` provar sidorna i
+headless Chromium mot en fejkad PostgREST som vägrar `*` och `ai_`-kolumner.
+
 ## Regler som inte får brytas (bakgrund i ritningen)
 
 1. AI-bedömningen visas aldrig för någon utom plattformsadmin i kalibreringsvyn.

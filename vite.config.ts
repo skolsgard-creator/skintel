@@ -50,8 +50,9 @@ export default defineConfig({
         globPatterns: ["**/*.{js,css,html,svg,woff2,png}"],
         // Sidorna under /dev finns bara i utvecklingsläge (routerna svarar
         // 404 i det byggda paketet), så deras kod, stil och provtypsnitt
-        // ska inte förcachas. Typsnittet som väljs i 1.4 flyttas till
-        // main.tsx och faller då utanför listan.
+        // ska inte förcachas. Brevets serif (Source Serif 4) förcachas --
+        // ett brev ska gå att läsa utan nät -- men bara de latinska
+        // teckenuppsättningarna.
         globIgnores: [
           "**/ui-*.js",
           "**/figur-*.js",
@@ -60,7 +61,7 @@ export default defineConfig({
           "**/familjen-grotesk-*.woff2",
           "**/fraunces-*.woff2",
           "**/inter-*.woff2",
-          "**/source-serif-4-*.woff2",
+          "**/source-serif-4-{cyrillic,cyrillic-ext,greek,vietnamese}-*.woff2",
         ],
       },
     }),

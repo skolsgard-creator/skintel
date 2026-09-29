@@ -33,7 +33,7 @@ type Phase =
   | { kind: "blocked"; readiness: Extract<Readiness, { ok: false }> }
   | { kind: "error"; message: string }
   | { kind: "steps"; entitlement: string }
-  | { kind: "done"; dueAt: string | null };
+  | { kind: "done"; dueAt: string | null; reviewId: string | null };
 
 const STEP_LABEL: Record<DraftStep, string> = { 1: "Plats", 2: "Foton", 3: "Frågor", 4: "Skicka" };
 
@@ -137,7 +137,7 @@ function NewCheck() {
       });
       if (result.outcome === "ok") {
         await clearDraft();
-        setPhase({ kind: "done", dueAt: result.dueAt });
+        setPhase({ kind: "done", dueAt: result.dueAt, reviewId: result.reviewId });
       } else {
         setSendError(outcomeText(result.outcome));
       }
@@ -177,7 +177,7 @@ function NewCheck() {
   if (phase.kind === "done") {
     return (
       <Shell>
-        <Receipt dueAt={phase.dueAt} />
+        <Receipt dueAt={phase.dueAt} reviewId={phase.reviewId} />
       </Shell>
     );
   }

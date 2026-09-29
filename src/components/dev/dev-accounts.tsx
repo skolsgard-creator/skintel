@@ -32,7 +32,9 @@ const ACCOUNTS = [
   { email: "admin@skintel.test", label: "Admin" },
 ] as const;
 
-export function DevAccounts() {
+/** `till`: vägen inloggningen stoppades på (samma som kodvägen följer), så
+ *  att en länk som /flack/<id> går att prova utloggad med ett seed-konto. */
+export function DevAccounts({ till }: { till: string | undefined }) {
   const navigate = useNavigate();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +47,10 @@ export function DevAccounts() {
     if (!result.ok) {
       setError(`${email}: ${result.message}`);
       setBusy(null);
+      return;
+    }
+    if (till) {
+      navigate({ href: till, replace: true });
       return;
     }
     navigate({ to: await resolveRoleHomeSafe(), replace: true });

@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Display, Eyebrow, Lede, Title } from "@/components/ui/page";
 import { Pill } from "@/components/ui/pill";
-import { DURATION_OPTIONS, SYMPTOM_QUESTIONS, TRI_OPTIONS } from "./steg-fragor";
+import { DURATION_OPTIONS, SYMPTOM_QUESTIONS, TRI_OPTIONS } from "./fragor";
 import { PHOTO_ORDER, PHOTO_SPECS, useObjectUrl } from "./steg-foton";
 import type { Draft } from "./utkast";
 
@@ -108,7 +108,7 @@ function Thumb({ blob, label }: { blob: Blob; label: string }) {
 
 /** Kvittot. Tiden kommer ur submit_lesion_review(): 24 timmar för
  *  privatkund, avtalets arbetsdagar för anställd. */
-export function Receipt({ dueAt }: { dueAt: string | null }) {
+export function Receipt({ dueAt, reviewId }: { dueAt: string | null; reviewId: string | null }) {
   const due = dueAt ? formatDue(dueAt) : null;
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-6 px-4 pt-10 pb-safe">
@@ -124,7 +124,14 @@ export function Receipt({ dueAt }: { dueAt: string | null }) {
         Ärendet ligger i en kö där bara kroppsdel och väntetid syns. Läkaren ser dina foton först när hen antar ärendet.
       </p>
       <div className="mt-auto flex flex-col gap-2 pt-4">
-        <Button asChild block>
+        {reviewId ? (
+          <Button asChild block>
+            <Link to="/app/arende/$id" params={{ id: reviewId }}>
+              Visa kontrollen
+            </Link>
+          </Button>
+        ) : null}
+        <Button asChild block variant={reviewId ? "ghost" : "primary"}>
           <Link to="/app">Till appen</Link>
         </Button>
       </div>

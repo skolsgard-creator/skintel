@@ -13,18 +13,23 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as AppRouteRouteImport } from './routes/app/route'
 import { Route as GranskaRouteRouteImport } from './routes/granska/route'
+import { Route as HemRouteImport } from './routes/hem'
 import { Route as InbjudanRouteImport } from './routes/inbjudan'
 import { Route as LoggaInRouteImport } from './routes/logga-in'
 import { Route as OrganisationRouteRouteImport } from './routes/organisation/route'
 import { Route as TvafaktorRouteImport } from './routes/tvafaktor'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AppIndexRouteImport } from './routes/app/index'
+import { Route as AppArendenRouteImport } from './routes/app/arenden'
 import { Route as AppNyKontrollRouteImport } from './routes/app/ny-kontroll'
 import { Route as DevFigurRouteImport } from './routes/dev/figur'
 import { Route as DevIdentitetRouteImport } from './routes/dev/identitet'
 import { Route as DevUiRouteImport } from './routes/dev/ui'
+import { Route as FlackIdRouteImport } from './routes/flack.$id'
 import { Route as GranskaIndexRouteImport } from './routes/granska/index'
 import { Route as OrganisationIndexRouteImport } from './routes/organisation/index'
+import { Route as AppArendeIdRouteImport } from './routes/app/arende.$id'
+import { Route as AppFlackIdRouteImport } from './routes/app/flack.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -44,6 +49,11 @@ const AppRouteRoute = AppRouteRouteImport.update({
 const GranskaRouteRoute = GranskaRouteRouteImport.update({
   id: '/granska',
   path: '/granska',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HemRoute = HemRouteImport.update({
+  id: '/hem',
+  path: '/hem',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InbjudanRoute = InbjudanRouteImport.update({
@@ -76,6 +86,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppArendenRoute = AppArendenRouteImport.update({
+  id: '/arenden',
+  path: '/arenden',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 const AppNyKontrollRoute = AppNyKontrollRouteImport.update({
   id: '/ny-kontroll',
   path: '/ny-kontroll',
@@ -96,6 +111,11 @@ const DevUiRoute = DevUiRouteImport.update({
   path: '/dev/ui',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FlackIdRoute = FlackIdRouteImport.update({
+  id: '/flack/$id',
+  path: '/flack/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GranskaIndexRoute = GranskaIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -106,6 +126,16 @@ const OrganisationIndexRoute = OrganisationIndexRouteImport.update({
   path: '/',
   getParentRoute: () => OrganisationRouteRoute,
 } as any)
+const AppArendeIdRoute = AppArendeIdRouteImport.update({
+  id: '/arende/$id',
+  path: '/arende/$id',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppFlackIdRoute = AppFlackIdRouteImport.update({
+  id: '/flack/$id',
+  path: '/flack/$id',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -113,31 +143,41 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRouteRouteWithChildren
   '/granska': typeof GranskaRouteRouteWithChildren
   '/organisation': typeof OrganisationRouteRouteWithChildren
+  '/hem': typeof HemRoute
   '/inbjudan': typeof InbjudanRoute
   '/logga-in': typeof LoggaInRoute
   '/tvafaktor': typeof TvafaktorRoute
+  '/app/arenden': typeof AppArendenRoute
   '/app/ny-kontroll': typeof AppNyKontrollRoute
   '/dev/figur': typeof DevFigurRoute
   '/dev/identitet': typeof DevIdentitetRoute
   '/dev/ui': typeof DevUiRoute
+  '/flack/$id': typeof FlackIdRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
   '/granska/': typeof GranskaIndexRoute
   '/organisation/': typeof OrganisationIndexRoute
+  '/app/arende/$id': typeof AppArendeIdRoute
+  '/app/flack/$id': typeof AppFlackIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/hem': typeof HemRoute
   '/inbjudan': typeof InbjudanRoute
   '/logga-in': typeof LoggaInRoute
   '/tvafaktor': typeof TvafaktorRoute
+  '/app/arenden': typeof AppArendenRoute
   '/app/ny-kontroll': typeof AppNyKontrollRoute
   '/dev/figur': typeof DevFigurRoute
   '/dev/identitet': typeof DevIdentitetRoute
   '/dev/ui': typeof DevUiRoute
+  '/flack/$id': typeof FlackIdRoute
   '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
   '/granska': typeof GranskaIndexRoute
   '/organisation': typeof OrganisationIndexRoute
+  '/app/arende/$id': typeof AppArendeIdRoute
+  '/app/flack/$id': typeof AppFlackIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -146,17 +186,22 @@ export interface FileRoutesById {
   '/app': typeof AppRouteRouteWithChildren
   '/granska': typeof GranskaRouteRouteWithChildren
   '/organisation': typeof OrganisationRouteRouteWithChildren
+  '/hem': typeof HemRoute
   '/inbjudan': typeof InbjudanRoute
   '/logga-in': typeof LoggaInRoute
   '/tvafaktor': typeof TvafaktorRoute
+  '/app/arenden': typeof AppArendenRoute
   '/app/ny-kontroll': typeof AppNyKontrollRoute
   '/dev/figur': typeof DevFigurRoute
   '/dev/identitet': typeof DevIdentitetRoute
   '/dev/ui': typeof DevUiRoute
+  '/flack/$id': typeof FlackIdRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
   '/granska/': typeof GranskaIndexRoute
   '/organisation/': typeof OrganisationIndexRoute
+  '/app/arende/$id': typeof AppArendeIdRoute
+  '/app/flack/$id': typeof AppFlackIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -166,31 +211,41 @@ export interface FileRouteTypes {
     | '/app'
     | '/granska'
     | '/organisation'
+    | '/hem'
     | '/inbjudan'
     | '/logga-in'
     | '/tvafaktor'
+    | '/app/arenden'
     | '/app/ny-kontroll'
     | '/dev/figur'
     | '/dev/identitet'
     | '/dev/ui'
+    | '/flack/$id'
     | '/admin/'
     | '/app/'
     | '/granska/'
     | '/organisation/'
+    | '/app/arende/$id'
+    | '/app/flack/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/hem'
     | '/inbjudan'
     | '/logga-in'
     | '/tvafaktor'
+    | '/app/arenden'
     | '/app/ny-kontroll'
     | '/dev/figur'
     | '/dev/identitet'
     | '/dev/ui'
+    | '/flack/$id'
     | '/admin'
     | '/app'
     | '/granska'
     | '/organisation'
+    | '/app/arende/$id'
+    | '/app/flack/$id'
   id:
     | '__root__'
     | '/'
@@ -198,17 +253,22 @@ export interface FileRouteTypes {
     | '/app'
     | '/granska'
     | '/organisation'
+    | '/hem'
     | '/inbjudan'
     | '/logga-in'
     | '/tvafaktor'
+    | '/app/arenden'
     | '/app/ny-kontroll'
     | '/dev/figur'
     | '/dev/identitet'
     | '/dev/ui'
+    | '/flack/$id'
     | '/admin/'
     | '/app/'
     | '/granska/'
     | '/organisation/'
+    | '/app/arende/$id'
+    | '/app/flack/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -217,12 +277,14 @@ export interface RootRouteChildren {
   AppRouteRoute: typeof AppRouteRouteWithChildren
   GranskaRouteRoute: typeof GranskaRouteRouteWithChildren
   OrganisationRouteRoute: typeof OrganisationRouteRouteWithChildren
+  HemRoute: typeof HemRoute
   InbjudanRoute: typeof InbjudanRoute
   LoggaInRoute: typeof LoggaInRoute
   TvafaktorRoute: typeof TvafaktorRoute
   DevFigurRoute: typeof DevFigurRoute
   DevIdentitetRoute: typeof DevIdentitetRoute
   DevUiRoute: typeof DevUiRoute
+  FlackIdRoute: typeof FlackIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -253,6 +315,13 @@ declare module '@tanstack/react-router' {
       path: '/granska'
       fullPath: '/granska'
       preLoaderRoute: typeof GranskaRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hem': {
+      id: '/hem'
+      path: '/hem'
+      fullPath: '/hem'
+      preLoaderRoute: typeof HemRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/inbjudan': {
@@ -297,6 +366,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/app/arenden': {
+      id: '/app/arenden'
+      path: '/arenden'
+      fullPath: '/app/arenden'
+      preLoaderRoute: typeof AppArendenRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/app/ny-kontroll': {
       id: '/app/ny-kontroll'
       path: '/ny-kontroll'
@@ -325,6 +401,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevUiRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/flack/$id': {
+      id: '/flack/$id'
+      path: '/flack/$id'
+      fullPath: '/flack/$id'
+      preLoaderRoute: typeof FlackIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/granska/': {
       id: '/granska/'
       path: '/'
@@ -338,6 +421,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/organisation/'
       preLoaderRoute: typeof OrganisationIndexRouteImport
       parentRoute: typeof OrganisationRouteRoute
+    }
+    '/app/arende/$id': {
+      id: '/app/arende/$id'
+      path: '/arende/$id'
+      fullPath: '/app/arende/$id'
+      preLoaderRoute: typeof AppArendeIdRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/app/flack/$id': {
+      id: '/app/flack/$id'
+      path: '/flack/$id'
+      fullPath: '/app/flack/$id'
+      preLoaderRoute: typeof AppFlackIdRouteImport
+      parentRoute: typeof AppRouteRoute
     }
   }
 }
@@ -355,13 +452,19 @@ const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
 )
 
 interface AppRouteRouteChildren {
+  AppArendenRoute: typeof AppArendenRoute
   AppNyKontrollRoute: typeof AppNyKontrollRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppArendeIdRoute: typeof AppArendeIdRoute
+  AppFlackIdRoute: typeof AppFlackIdRoute
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
+  AppArendenRoute: AppArendenRoute,
   AppNyKontrollRoute: AppNyKontrollRoute,
   AppIndexRoute: AppIndexRoute,
+  AppArendeIdRoute: AppArendeIdRoute,
+  AppFlackIdRoute: AppFlackIdRoute,
 }
 
 const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
@@ -397,12 +500,14 @@ const rootRouteChildren: RootRouteChildren = {
   AppRouteRoute: AppRouteRouteWithChildren,
   GranskaRouteRoute: GranskaRouteRouteWithChildren,
   OrganisationRouteRoute: OrganisationRouteRouteWithChildren,
+  HemRoute: HemRoute,
   InbjudanRoute: InbjudanRoute,
   LoggaInRoute: LoggaInRoute,
   TvafaktorRoute: TvafaktorRoute,
   DevFigurRoute: DevFigurRoute,
   DevIdentitetRoute: DevIdentitetRoute,
   DevUiRoute: DevUiRoute,
+  FlackIdRoute: FlackIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

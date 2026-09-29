@@ -15,16 +15,21 @@ function AppStart() {
     <SignedInPlaceholder
       eyebrow="Appen"
       title="Du är inloggad."
-      text="Hemvyn med kroppsfiguren kommer i steg 3.4. Ny kontroll finns redan."
+      text="Hemvyn med kroppsfiguren och navigeringen kommer i nästa steg. Ny kontroll och ärendena finns redan."
       session={session}
       roles={roles}
       action={
-        <Button asChild size="lg">
-          <Link to="/app/ny-kontroll">
-            <Camera aria-hidden />
-            Ny kontroll
-          </Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild size="lg">
+            <Link to="/app/ny-kontroll">
+              <Camera aria-hidden />
+              Ny kontroll
+            </Link>
+          </Button>
+          <Button asChild size="lg" variant="outline">
+            <Link to="/app/arenden">Mina ärenden</Link>
+          </Button>
+        </div>
       }
     />
   );

@@ -197,7 +197,7 @@ function LoginPage() {
       </p>
 
       {/* Villkoret står i vyn, inte i komponenten -- se dev-accounts.tsx. */}
-      {import.meta.env.DEV && <DevAccounts />}
+      {import.meta.env.DEV && <DevAccounts till={till} />}
     </AuthShell>
   );
 }
