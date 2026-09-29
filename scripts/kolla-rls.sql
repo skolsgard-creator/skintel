@@ -545,13 +545,16 @@ BEGIN
         || '; foton ' || (SELECT count(*) FROM public.review_images ri WHERE ri.lesion_review_id = _id)
         || '; förfall ' || CASE WHEN EXISTS (SELECT 1 FROM public.lesion_reviews lr WHERE lr.id = _id AND lr.response_due_at > now()) THEN 'satt' ELSE 'SAKNAS' END
         || '; notis ' || CASE WHEN EXISTS (SELECT 1 FROM public.notification_outbox o
-                                            WHERE o.lesion_review_id = _id AND o.kind = 'case_received') THEN 'i outboxen' ELSE 'SAKNAS' END;
+                                            WHERE o.lesion_review_id = _id AND o.kind = 'case_received') THEN 'i outboxen' ELSE 'SAKNAS' END
+        -- Symtomversionen fryses av funktionen (20260929090000), aldrig av klienten.
+        || '; symtomversion ' || CASE WHEN EXISTS (SELECT 1 FROM public.lesion_reviews lr WHERE lr.id = _id
+                                                     AND lr.symptom_version = '2026-09-28.1') THEN 'fryst' ELSE 'SAKNAS' END;
     END IF;
     RAISE EXCEPTION USING MESSAGE = 'utfall:' || _utfall;
   EXCEPTION WHEN OTHERS THEN
     IF SQLERRM LIKE 'utfall:%' THEN
       INSERT INTO _resultat VALUES (35,'medlem med avtal får skicka in',
-        CASE WHEN substr(SQLERRM, 8) = 'okänt foto: image_not_found; inskick: ok; anamnes fryst; foton 1; förfall satt; notis i outboxen'
+        CASE WHEN substr(SQLERRM, 8) = 'okänt foto: image_not_found; inskick: ok; anamnes fryst; foton 1; förfall satt; notis i outboxen; symtomversion fryst'
              THEN 'OK: ' || substr(SQLERRM, 8) ELSE 'FEL: ' || substr(SQLERRM, 8) END);
     ELSE
       INSERT INTO _resultat VALUES (35,'medlem med avtal får skicka in','FEL: '||SQLERRM);
@@ -701,6 +704,36 @@ BEGIN
              ELSE 'FEL: '||SQLERRM END);
   END;
 END $$;
+
+/* ---------------------------------------------------------------------
+   41. Kroppsvalet (20260929090000): patienten får skriva figure_variant på
+       sin egen profil -- kolumngranten -- men fortfarande inte e-posten.
+       Båda försöken rullas tillbaka.
+   --------------------------------------------------------------------- */
+SET ROLE authenticated;
+SELECT set_config('request.jwt.claims', json_build_object('sub',(SELECT patient FROM _aktorer))::text, false);
+DO $$
+DECLARE _p uuid := (SELECT patient FROM _aktorer);
+BEGIN
+  BEGIN
+    UPDATE public.profiles SET figure_variant = 'kvinna' WHERE id = _p;
+    IF NOT FOUND THEN RAISE EXCEPTION 'utfall:ingen rad'; END IF;
+    RAISE EXCEPTION 'utfall:ok';
+  EXCEPTION WHEN OTHERS THEN
+    INSERT INTO _resultat VALUES (41,'patienten kan välja kropp på sin profil',
+      CASE WHEN SQLERRM = 'utfall:ok' THEN 'OK' ELSE 'FEL: '||SQLERRM END);
+  END;
+  BEGIN
+    UPDATE public.profiles SET email = 'x@example.com' WHERE id = _p;
+    RAISE EXCEPTION 'gick_igenom';
+  EXCEPTION
+    WHEN insufficient_privilege THEN
+      INSERT INTO _resultat VALUES (41,'patienten kan inte skriva e-posten på profilen','OK: nekad');
+    WHEN OTHERS THEN
+      INSERT INTO _resultat VALUES (41,'patienten kan inte skriva e-posten på profilen','FEL: '||SQLERRM);
+  END;
+END $$;
+RESET ROLE;
 
 SELECT n, kontroll, utfall,
        CASE WHEN utfall LIKE 'FEL%' THEN '<<<<<' ELSE '' END AS flagga

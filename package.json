@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host --port 8080",
+    "dev:https": "SKINTEL_HTTPS=1 vite --host --port 8080",
     "build": "vite build && tsc --noEmit",
     "build:prov": "vite build --mode prov",
     "preview": "vite preview --host --port 8080",
@@ -39,7 +40,9 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@types/three": "^0.186.0",
+    "@vitejs/plugin-basic-ssl": "^2.3.0",
     "@vitejs/plugin-react": "^6.1.1",
+    "fake-indexeddb": "^6.2.5",
     "playwright": "^1.63.0",
     "prettier": "^3.7.3",
     "tailwindcss": "^4.3.3",

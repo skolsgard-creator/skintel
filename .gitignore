@@ -16,3 +16,6 @@ supabase/.temp/
 
 # bildjämförelser från bun run shots
 shots/
+
+# Falsk kamera och skärmbilder från scripts/prov-ny-kontroll.mjs
+prov/

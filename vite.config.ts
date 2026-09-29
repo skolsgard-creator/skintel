@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import { VitePWA } from "vite-plugin-pwa";
+import basicSsl from "@vitejs/plugin-basic-ssl";
 import { fileURLToPath, URL } from "node:url";
 
 // Ren SPA: ingen SSR, inga serverfunktioner. Allt som kräver service-role bor
@@ -10,6 +11,10 @@ import { fileURLToPath, URL } from "node:url";
 // projektet, avsnitt 6.
 export default defineConfig({
   plugins: [
+    // `bun run dev:https`: kameran (getUserMedia) finns bara i en säker
+    // kontext, och telefonen når dev-servern på datorns LAN-adress över
+    // http. Självsignerat certifikat; telefonen får godkänna det en gång.
+    process.env.SKINTEL_HTTPS ? basicSsl() : null,
     // Routerpluginet ska ligga före react().
     tanstackRouter({ target: "react", autoCodeSplitting: true }),
     react(),

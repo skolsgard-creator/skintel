@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { Session } from "@supabase/supabase-js";
 import { sessionAal, signOut } from "@/lib/auth";
@@ -17,12 +17,15 @@ export function SignedInPlaceholder({
   text,
   session,
   roles,
+  action,
 }: {
   eyebrow: string;
   title: string;
   text: string;
   session: Session;
   roles: Roles;
+  /** Huvudhandlingen på vyn, t.ex. "Ny kontroll" i appen. */
+  action?: ReactNode;
 }) {
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
@@ -61,6 +64,7 @@ export function SignedInPlaceholder({
           {sessionAal(session) === "aal2" ? <Pill variant="amber">Tvåfaktor aktiv</Pill> : null}
         </div>
       </div>
+      {action ? <div>{action}</div> : null}
       <nav aria-label="Dina vyer" className="flex flex-wrap gap-2">
         {others.map((o) => (
           <Button key={o.to} asChild variant="secondary" size="sm">

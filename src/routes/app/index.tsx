@@ -1,5 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Camera } from "lucide-react";
 import { SignedInPlaceholder } from "@/components/signed-in-placeholder";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/app/")({
   component: AppStart,
@@ -13,9 +15,17 @@ function AppStart() {
     <SignedInPlaceholder
       eyebrow="Appen"
       title="Du är inloggad."
-      text="Kroppsfiguren och din första kontroll byggs i fas 3. Tills dess finns bara det här."
+      text="Hemvyn med kroppsfiguren kommer i steg 3.4. Ny kontroll finns redan."
       session={session}
       roles={roles}
+      action={
+        <Button asChild size="lg">
+          <Link to="/app/ny-kontroll">
+            <Camera aria-hidden />
+            Ny kontroll
+          </Link>
+        </Button>
+      }
     />
   );
 }

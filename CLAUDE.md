@@ -20,6 +20,7 @@ Vite + React 19 + TypeScript, TanStack Router (filbaserad, `src/routes/`,
 Ingen SSR, inga serverfunktioner. Pakethanterare: bun.
 
 - `bun run dev` — dev-server på `http://localhost:8080`, nåbar från mobilen på datorns LAN-adress
+- `bun run dev:https` — samma över https (självsignerat, godkänns en gång i telefonen): kameran i sökaren finns bara i en säker kontext, och LAN-adressen över http är ingen
 - `bun run build` — bygger `dist/` och typkontrollerar
 - `bun run test` — vitest
 - `npx supabase db push` — kör nya migrationer mot den länkade databasen
@@ -147,9 +148,47 @@ ger Testbolaget ett avtal, admin-kontot ett betalt köp och båda ett
 platshållarfoto i lagringen.
 
 Lokal provkörning av migrationerna: hela kedjan går att spela upp i en vanlig
-Postgres med ett litet Supabase-skal (roller, `auth.uid()`, `storage.objects`);
-`20260812143321` är en dubblett av `20260810142457` och `20260906230000`
-kräver pg_cron/pg_net -- båda hoppas över lokalt.
+Postgres med ett litet Supabase-skal (`scripts/lokal-postgres-skal.sql`:
+roller, `auth.uid()`, `storage.objects`); `20260812143321` är en dubblett av
+`20260810142457` och `20260906230000` kräver pg_cron/pg_net -- båda hoppas
+över lokalt.
+
+## Ny kontroll (steg 3.3)
+
+`/app/ny-kontroll`: fyra steg i helskärm -- plats på figuren, tre foton,
+frågor, skicka -- i `src/routes/app/ny-kontroll.tsx` med ett steg per fil i
+`src/kamera/`. Utkastet (plats, foton som blobbar, svar) sparas i IndexedDB
+efter varje ändring (`utkast.ts`) och raderas när kvittot visas; ingenting
+laddas upp förrän användaren skickar. Rätten, villkoren och profilen
+kontrolleras när flödet öppnas (`checkReadiness`) och avgörs ändå i
+databasen vid inskicket.
+
+Kameran (`sokare.tsx`, `kamera.ts`) är en `getUserMedia`-ström med en ring och
+två MÄTTA indikatorer, skärpa (Laplace-varians) och ljus (histogram), i
+ringens område (`kvalitet.ts`, rena funktioner, enhetstestade). Avstånd mäts
+inte -- ingen webbläsare lämnar ut fokusavståndet -- ringen och instruktionen
+bär det. Indikatorerna mäter bilden, aldrig fläcken (regel 3), och spärrar
+aldrig: "använd ändå" finns alltid, och `skickad_trots_varning` följer med i
+`review_images.quality_flags`. Kameraappen (`<input capture>`) och galleriet
+finns alltid som alternativ; alla vägar går genom samma mätning på den
+färdiga bilden (`bild.ts`: längsta sida 1600 px, JPEG 0,82). Trösklarna
+(`SKARPA_GRANS` 60, `MORK_GRANS` 50, `UTFRATT_ANDEL` 5 %) är startvärden;
+sökaren visar råvärdena i dev-läge så att de kan justeras mot riktiga
+telefoner.
+
+Inskicket (`skicka.ts`) är en port (`Sender`) med `supabase-avsandare.ts`
+som riktig avsändare: fläcken skapas om den är ny (namn efter kroppsdel,
+löpnummer), fotona laddas upp till `skin-photos/<uid>/<uuid>.jpg` med ett
+omförsök, sedan `submit_lesion_review()`. Kroppsvalet sparas på
+`profiles.figure_variant` (`20260929090000`); alla fläckar bor i samma
+kropps rymd. Symtomversionen fryses av RPC:n (`symptom_version`), aldrig av
+klienten. Kontroll 41 i `kolla-rls.sql` provar kolumngranten.
+
+Provkörning utan telefon: `scripts/prov-ny-kontroll.mjs` kör hela flödet i
+headless Chromium med en falsk kamera (`scripts/falsk-kamera.py` gör
+y4m-filerna: skarp, suddig, mörk) och Supabase fejkat vid nätverksgränsen.
+Det skarpa provet är telefonen mot riktiga databasen: `/dev`-panelens
+patient har avtal via Testbolaget.
 
 ## Regler som inte får brytas (bakgrund i ritningen)
 

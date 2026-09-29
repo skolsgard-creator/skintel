@@ -19,6 +19,7 @@ import { Route as OrganisationRouteRouteImport } from './routes/organisation/rou
 import { Route as TvafaktorRouteImport } from './routes/tvafaktor'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AppIndexRouteImport } from './routes/app/index'
+import { Route as AppNyKontrollRouteImport } from './routes/app/ny-kontroll'
 import { Route as DevFigurRouteImport } from './routes/dev/figur'
 import { Route as DevIdentitetRouteImport } from './routes/dev/identitet'
 import { Route as DevUiRouteImport } from './routes/dev/ui'
@@ -75,6 +76,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppNyKontrollRoute = AppNyKontrollRouteImport.update({
+  id: '/ny-kontroll',
+  path: '/ny-kontroll',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 const DevFigurRoute = DevFigurRouteImport.update({
   id: '/dev/figur',
   path: '/dev/figur',
@@ -110,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/inbjudan': typeof InbjudanRoute
   '/logga-in': typeof LoggaInRoute
   '/tvafaktor': typeof TvafaktorRoute
+  '/app/ny-kontroll': typeof AppNyKontrollRoute
   '/dev/figur': typeof DevFigurRoute
   '/dev/identitet': typeof DevIdentitetRoute
   '/dev/ui': typeof DevUiRoute
@@ -123,6 +130,7 @@ export interface FileRoutesByTo {
   '/inbjudan': typeof InbjudanRoute
   '/logga-in': typeof LoggaInRoute
   '/tvafaktor': typeof TvafaktorRoute
+  '/app/ny-kontroll': typeof AppNyKontrollRoute
   '/dev/figur': typeof DevFigurRoute
   '/dev/identitet': typeof DevIdentitetRoute
   '/dev/ui': typeof DevUiRoute
@@ -141,6 +149,7 @@ export interface FileRoutesById {
   '/inbjudan': typeof InbjudanRoute
   '/logga-in': typeof LoggaInRoute
   '/tvafaktor': typeof TvafaktorRoute
+  '/app/ny-kontroll': typeof AppNyKontrollRoute
   '/dev/figur': typeof DevFigurRoute
   '/dev/identitet': typeof DevIdentitetRoute
   '/dev/ui': typeof DevUiRoute
@@ -160,6 +169,7 @@ export interface FileRouteTypes {
     | '/inbjudan'
     | '/logga-in'
     | '/tvafaktor'
+    | '/app/ny-kontroll'
     | '/dev/figur'
     | '/dev/identitet'
     | '/dev/ui'
@@ -173,6 +183,7 @@ export interface FileRouteTypes {
     | '/inbjudan'
     | '/logga-in'
     | '/tvafaktor'
+    | '/app/ny-kontroll'
     | '/dev/figur'
     | '/dev/identitet'
     | '/dev/ui'
@@ -190,6 +201,7 @@ export interface FileRouteTypes {
     | '/inbjudan'
     | '/logga-in'
     | '/tvafaktor'
+    | '/app/ny-kontroll'
     | '/dev/figur'
     | '/dev/identitet'
     | '/dev/ui'
@@ -285,6 +297,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/app/ny-kontroll': {
+      id: '/app/ny-kontroll'
+      path: '/ny-kontroll'
+      fullPath: '/app/ny-kontroll'
+      preLoaderRoute: typeof AppNyKontrollRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/dev/figur': {
       id: '/dev/figur'
       path: '/dev/figur'
@@ -336,10 +355,12 @@ const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
 )
 
 interface AppRouteRouteChildren {
+  AppNyKontrollRoute: typeof AppNyKontrollRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
+  AppNyKontrollRoute: AppNyKontrollRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
