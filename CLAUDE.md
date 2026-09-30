@@ -46,6 +46,10 @@ Reglerna står i app.css-huvudet och gäller all UI-kod:
 - Tryckrespons vid nedtryck (`pressable`, `active:`), aldrig bara vid släpp.
   Rörelselängder `motion-fast/base/slow`; fjäder utan överskjut som standard.
 - Lager: `z-(--z-nav)`, `z-(--z-sheet)`, `z-(--z-notice)`.
+- Safe area i överkant läggs av ramen runt sidan -- appens ram
+  (`src/routes/app/route.tsx`) och helskärmarnas skal -- aldrig i `Page`:
+  `pt-safe` står efter `pt-4`/`pt-6`/`pt-10` i den byggda CSS:en och skrev
+  därför över sidans egen luft.
 - Kontraster mäts, inte gissas: text ≥ 4,5:1, kontrollkanter ≥ 3:1
   (`--color-input`), platshållare ≥ 4,5:1 (`--color-faint`).
 - `html` har `font-size: 106.25%`, aldrig ett px-tal: storleken följer
@@ -100,9 +104,19 @@ morfning, skalning, armarna fällda till 22°, kvadrisk förenkling till
 12 000 trianglar, och en region per hörn ur ett kapselskelett byggt av
 modellens egna ledmarkörer. Utdata: `public/figur/figur-<kropp>.bin` och
 `src/figur/figur-data.ts` (regionlista; per kropp fokuspunkter och siluett).
-En markering hör till en kropps rymd: byts kroppen börjar figuren tom.
+Ett tryck ger `FigureHit`: en prick (`marker`, med fläckens id), kroppen
+(`body`, med punkten) eller ingenting (`none`). Prickarna läggs på närmaste
+punkt på den kropp som visas, inom prickens region (`traff.ts`: rena
+funktioner, testade också mot de riktiga kropparna), så en fläck som
+sparats på en annan av de tre kropparna -- eller på hud-kolls figur -- ändå
+hamnar på huden, på rätt kroppsdel. Ett tryck träffar en prick inom 22 px
+på skärmen, om pricken vetter mot kameran och inte skyms. Byts kroppen
+läggs prickarna om; valet rensas.
 3D-renderingen (`figur-3d.ts`) är three.js-kärnan utan react-three-fiber,
 hämtas först när figuren monteras och ritar bara när något rör sig.
+Prickarna ritas i blågrönt eller i den mörka bärnstenen (`--color-amber-ink`:
+den ljusa har för lite kontrast mot figuren); under fötterna ligger en
+skugga, en radiell gradient på ett plan.
 Siluetten (`siluett.tsx`) står på skärmen tills 3D:n är uppe.
 
 Provsidan `/dev/figur` visar mätvärdena och växlar kropp. Mätbygget
@@ -180,9 +194,12 @@ Inskicket (`skicka.ts`) är en port (`Sender`) med `supabase-avsandare.ts`
 som riktig avsändare: fläcken skapas om den är ny (namn efter kroppsdel,
 löpnummer), fotona laddas upp till `skin-photos/<uid>/<uuid>.jpg` med ett
 omförsök, sedan `submit_lesion_review()`. Kroppsvalet sparas på
-`profiles.figure_variant` (`20260929090000`); alla fläckar bor i samma
-kropps rymd. Symtomversionen fryses av RPC:n (`symptom_version`), aldrig av
-klienten. Kontroll 41 i `kolla-rls.sql` provar kolumngranten.
+`profiles.figure_variant` (`20260929090000`) och går att byta i Profil;
+fläckarnas punkter läggs då om på den valda kroppens yta (se Kroppsfiguren).
+Symtomversionen fryses av RPC:n (`symptom_version`), aldrig av klienten.
+Kontroll 41 i `kolla-rls.sql` provar kolumngranten. Öppnas Ny kontroll för
+en fläck (`?flack=`) medan ett påbörjat utkast för något annat finns, frågar
+sidan först (`draftInTheWay` i `utkast.ts`) i stället för att skriva över det.
 
 Provkörning utan telefon: `scripts/prov-ny-kontroll.mjs` kör hela flödet i
 headless Chromium med en falsk kamera (`scripts/falsk-kamera.py` gör
@@ -222,6 +239,65 @@ Före granskarvyn besvaras testärenden med `scripts/besvara-testarende.sql`
 (seed-dermatologen, riktiga funktioner, bara @skintel.test-konton; utfall,
 text och veckor under ÄNDRA HÄR). `scripts/prov-arende.mjs` provar sidorna i
 headless Chromium mot en fejkad PostgREST som vägrar `*` och `ai_`-kolumner.
+
+## Appskalet (menyn, Min hud, Kunskap, Profil)
+
+Appens ram (`src/routes/app/route.tsx`) bär menyn i underkant -- Min hud ·
+Ärenden · Ny kontroll (mittknappen) · Kunskap · Profil -- och safe area i
+överkant. Aktiv flik räknas ur adressen (`src/appskal/flikar.ts`, testad;
+ett ärende på `/app/arende/…` hör till Ärenden) och ges till `BottomNav` som
+`activeKey`. En route som ska visas utan meny säger `staticData: { helskarm:
+true }` (Ny kontroll). Menyn skrivs inte ut.
+
+Min hud (`/app`, `src/hem/`): kortet "Just nu" (`nu.ts`, testad) med en rad
+per fläck och högst tre rader -- nya bilder behövs, väntar på svar med
+klockan, dags för nytt foto (från två veckor före läkarens datum; raden
+leder till en ny kontroll av fläcken), svar de senaste två veckorna. För en
+och samma fläck går ett nytt svar före en uppföljning som ännu inte är här.
+Utan kontroller: den första kontrollen; annars "Inget väntar just nu". Under
+kortet figuren med fläckarna (`flackar.ts`: fläckar med sparad punkt blir
+prickar, med sin region och sin färg), en mjuk skugga under fötterna och en
+liten vändknapp i hörnet -- figuren vrids främst med fingret. Ett tryck på
+en prick visar fläcken i ett kort som klistrar sig ovanför menyn (`sticky`,
+efter sidan: figuren behåller sin storlek när man trycker och går att rulla
+upp ovanför kortet på en liten skärm), med Öppna och Ny kontroll av fläcken
+(bara utan öppen kontroll). Raden under figuren gäller när ingen prick är
+vald. Prickarna finns också som en dold lista för skärmläsare. Läsningen
+(`data.ts`) går under RLS med kolumnlistor, som ärendena.
+
+Foto och färg: varje rad -- i Just nu, i Ärenden och i kortet för en vald
+fläck -- visar fläckens närbild rund i `Avatar`, med en ring i lägets färg.
+Bilden är närbilden ur fläckens senaste kontroll, annars kontrollens första
+foto (`src/arenden/narbild.ts`, testad); `narbild-data.ts` signerar i
+webbläsaren och ger samma länk igen under besöket, så att bilden inte
+hämtas om mellan flikarna. Färgen är `caseTone` (`utfall.ts`, testad):
+bärnsten när något väntar på patienten -- nya bilder, förhöjd risk eller
+besök på plats, en uppföljning som är här -- annars blågrön. Prickarna på
+figuren har samma färg (`BodyMarker.tone`). Färgen upprepar alltid något
+som står i ord: i Ärenden och i kortet är texten densamma (`SpotText`,
+`flacktext.tsx`) -- namnet, pillret och raden med när (`spotMeta` i
+`lista.ts`), som säger "Dags för nytt foto" när uppföljningen är här.
+
+Kunskap (`/app/kunskap`, `src/kunskap/artiklar.ts`): texter som redan har
+sitt innehåll. Fotoguidens texter finns på ett ställe
+(`src/kamera/fotoguide.ts`) och används av både kameran och artikeln.
+
+Profil (`/app/profil`, `src/profil/`): e-post, uppgifterna hudläkaren ser
+(födelseår, -månad och hudtyp I–VI; krävs för inskicket), kroppen i
+figuren, vem som betalar (`my_submission_entitlement()`, med "Lös in kod"
+till `/inbjudan` när ingen betalar), de andra vyerna för den som har
+rollerna, och utloggning. 18-årsgränsen kontrolleras i formuläret med samma
+räkning som databasens trigger `enforce_minimum_age` (hela år från den
+första i födelsemånaden) -- och i databasen, som bestämmer; kontroll 42 i
+`kolla-rls.sql` provar det, gränsen inräknad.
+
+`scripts/prov-appskal.mjs` provar skalet i headless Chromium mot en fejkad
+PostgREST och lagring: flikarna, kortets lägen, fotona och ringarnas färger
+(och reserven när ett foto saknas), tryck på prickar framifrån och bakifrån
+(kamerans läge räknas fram i skriptet), kortet ovanför menyn utan att
+figuren ändrar storlek, vändningen efter en vridning för hand, raderna i
+Ärenden, Kunskap, Profil med databasens nej för under 18, helskärmen, frågan
+om ett påbörjat utkast och utloggningen.
 
 ## Regler som inte får brytas (bakgrund i ritningen)
 

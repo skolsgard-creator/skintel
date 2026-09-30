@@ -98,3 +98,8 @@ export function calendarDaysBetween(from: string | Date, to: string | Date): num
 export function yearOf(iso: string | Date): number {
   return swedishParts(iso).year;
 }
+
+/** "april" för 4. */
+export function monthName(month: number): string {
+  return MONTHS[month - 1] ?? "";
+}

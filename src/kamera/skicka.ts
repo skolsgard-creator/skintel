@@ -128,7 +128,7 @@ async function uploadWithRetry(sender: Sender, path: string, blob: Blob): Promis
 const OUTCOME_TEXT: Record<string, string> = {
   no_entitlement:
     "Ditt konto har ingen kontroll att använda just nu. Kontrollen är sparad; kontakta oss om du tror att det är fel.",
-  terms_not_accepted: "Villkoren behöver godkännas innan en kontroll kan skickas. Det gör du under Profil.",
+  terms_not_accepted: "Villkoren behöver vara godkända för ditt konto innan en kontroll kan skickas.",
   profile_incomplete:
     "Din profil behöver födelseår, födelsemånad och hudtyp innan en kontroll kan skickas. Fyll i dem under Profil.",
   spot_not_found: "Platsen på kroppen gick inte att hitta. Välj platsen igen.",

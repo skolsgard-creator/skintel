@@ -4,6 +4,7 @@ import {
   BookOpen,
   Camera,
   ChevronRight,
+  CircleDot,
   CircleUser,
   Clock,
   FolderOpen,
@@ -21,7 +22,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Field, Input, Textarea } from "@/components/ui/field";
+import { Avatar } from "@/components/ui/avatar";
+import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { Pill } from "@/components/ui/pill";
 import {
   Sheet,
@@ -262,6 +264,13 @@ function UiPage() {
             <Field label="Arbetsgivare">
               <Input value="Testbolaget AB" readOnly disabled />
             </Field>
+            <Field label="Födelsemånad">
+              <Select defaultValue="">
+                <option value="">Välj</option>
+                <option value="4">april</option>
+                <option value="5">maj</option>
+              </Select>
+            </Field>
             <Button type="submit" variant="outline">
               {visaFel ? "Dölj felet" : "Visa ett fel"}
             </Button>
@@ -312,6 +321,20 @@ function UiPage() {
             <Pill variant="primary">Bör undersökas på plats</Pill>
             <Pill variant="amber">Bilderna räcker inte</Pill>
             <Pill variant="outline">Avslutad</Pill>
+          </div>
+        </Section>
+
+        {/* ---------------------------------------------------------------- */}
+        <Section
+          title="Avatar"
+          lede="Rund bild med en ring i lägets färg: fläckens närbild i listorna, senare hudläkarens porträtt. Blågrön när det rullar på, bärnsten när något väntar på dig. Utan bild visas reserven."
+        >
+          <div className="flex flex-wrap items-center gap-5">
+            <Avatar src={DEMO_BILD} alt="" tone="primary" zoom={1.6} fallback={<CircleDot className="size-5" aria-hidden />} />
+            <Avatar src={DEMO_BILD} alt="" tone="amber" zoom={1.6} fallback={<CircleDot className="size-5" aria-hidden />} />
+            <Avatar src={null} alt="" tone="primary" fallback={<CircleDot className="size-5" strokeWidth={1.75} aria-hidden />} />
+            <Avatar src="/finns-inte.jpg" alt="" tone="amber" fallback={<CircleDot className="size-5" strokeWidth={1.75} aria-hidden />} />
+            <Avatar src={DEMO_BILD} alt="" tone={null} fallback={<CircleDot className="size-5" aria-hidden />} />
           </div>
         </Section>
 
@@ -415,6 +438,14 @@ function UiPage() {
     </>
   );
 }
+
+/** Provbild för avataren: en mjuk hudton med en mörkare punkt i mitten,
+ *  ritad här -- aldrig ett riktigt foto av en fläck. */
+const DEMO_BILD =
+  "data:image/svg+xml;utf8," +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><radialGradient id="h" cx="50%" cy="45%" r="70%"><stop offset="0" stop-color="#e7c3a6"/><stop offset="1" stop-color="#c99a7a"/></radialGradient></defs><rect width="100" height="100" fill="url(#h)"/><ellipse cx="51" cy="49" rx="9" ry="8" fill="#6b4a3a" opacity=".85"/></svg>',
+  );
 
 function Section({ title, lede, children }: { title: string; lede?: string; children: ReactNode }) {
   return (

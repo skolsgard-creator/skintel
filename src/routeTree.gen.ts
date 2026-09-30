@@ -22,6 +22,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as AppArendenRouteImport } from './routes/app/arenden'
 import { Route as AppNyKontrollRouteImport } from './routes/app/ny-kontroll'
+import { Route as AppProfilRouteImport } from './routes/app/profil'
 import { Route as DevFigurRouteImport } from './routes/dev/figur'
 import { Route as DevIdentitetRouteImport } from './routes/dev/identitet'
 import { Route as DevUiRouteImport } from './routes/dev/ui'
@@ -30,6 +31,8 @@ import { Route as GranskaIndexRouteImport } from './routes/granska/index'
 import { Route as OrganisationIndexRouteImport } from './routes/organisation/index'
 import { Route as AppArendeIdRouteImport } from './routes/app/arende.$id'
 import { Route as AppFlackIdRouteImport } from './routes/app/flack.$id'
+import { Route as AppKunskapIndexRouteImport } from './routes/app/kunskap.index'
+import { Route as AppKunskapArtikelRouteImport } from './routes/app/kunskap.$artikel'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -96,6 +99,11 @@ const AppNyKontrollRoute = AppNyKontrollRouteImport.update({
   path: '/ny-kontroll',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppProfilRoute = AppProfilRouteImport.update({
+  id: '/profil',
+  path: '/profil',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 const DevFigurRoute = DevFigurRouteImport.update({
   id: '/dev/figur',
   path: '/dev/figur',
@@ -136,6 +144,16 @@ const AppFlackIdRoute = AppFlackIdRouteImport.update({
   path: '/flack/$id',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppKunskapIndexRoute = AppKunskapIndexRouteImport.update({
+  id: '/kunskap/',
+  path: '/kunskap/',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppKunskapArtikelRoute = AppKunskapArtikelRouteImport.update({
+  id: '/kunskap/$artikel',
+  path: '/kunskap/$artikel',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -149,6 +167,7 @@ export interface FileRoutesByFullPath {
   '/tvafaktor': typeof TvafaktorRoute
   '/app/arenden': typeof AppArendenRoute
   '/app/ny-kontroll': typeof AppNyKontrollRoute
+  '/app/profil': typeof AppProfilRoute
   '/dev/figur': typeof DevFigurRoute
   '/dev/identitet': typeof DevIdentitetRoute
   '/dev/ui': typeof DevUiRoute
@@ -159,6 +178,8 @@ export interface FileRoutesByFullPath {
   '/organisation/': typeof OrganisationIndexRoute
   '/app/arende/$id': typeof AppArendeIdRoute
   '/app/flack/$id': typeof AppFlackIdRoute
+  '/app/kunskap/$artikel': typeof AppKunskapArtikelRoute
+  '/app/kunskap/': typeof AppKunskapIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -168,6 +189,7 @@ export interface FileRoutesByTo {
   '/tvafaktor': typeof TvafaktorRoute
   '/app/arenden': typeof AppArendenRoute
   '/app/ny-kontroll': typeof AppNyKontrollRoute
+  '/app/profil': typeof AppProfilRoute
   '/dev/figur': typeof DevFigurRoute
   '/dev/identitet': typeof DevIdentitetRoute
   '/dev/ui': typeof DevUiRoute
@@ -178,6 +200,8 @@ export interface FileRoutesByTo {
   '/organisation': typeof OrganisationIndexRoute
   '/app/arende/$id': typeof AppArendeIdRoute
   '/app/flack/$id': typeof AppFlackIdRoute
+  '/app/kunskap/$artikel': typeof AppKunskapArtikelRoute
+  '/app/kunskap': typeof AppKunskapIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -192,6 +216,7 @@ export interface FileRoutesById {
   '/tvafaktor': typeof TvafaktorRoute
   '/app/arenden': typeof AppArendenRoute
   '/app/ny-kontroll': typeof AppNyKontrollRoute
+  '/app/profil': typeof AppProfilRoute
   '/dev/figur': typeof DevFigurRoute
   '/dev/identitet': typeof DevIdentitetRoute
   '/dev/ui': typeof DevUiRoute
@@ -202,6 +227,8 @@ export interface FileRoutesById {
   '/organisation/': typeof OrganisationIndexRoute
   '/app/arende/$id': typeof AppArendeIdRoute
   '/app/flack/$id': typeof AppFlackIdRoute
+  '/app/kunskap/$artikel': typeof AppKunskapArtikelRoute
+  '/app/kunskap/': typeof AppKunskapIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -217,6 +244,7 @@ export interface FileRouteTypes {
     | '/tvafaktor'
     | '/app/arenden'
     | '/app/ny-kontroll'
+    | '/app/profil'
     | '/dev/figur'
     | '/dev/identitet'
     | '/dev/ui'
@@ -227,6 +255,8 @@ export interface FileRouteTypes {
     | '/organisation/'
     | '/app/arende/$id'
     | '/app/flack/$id'
+    | '/app/kunskap/$artikel'
+    | '/app/kunskap/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -236,6 +266,7 @@ export interface FileRouteTypes {
     | '/tvafaktor'
     | '/app/arenden'
     | '/app/ny-kontroll'
+    | '/app/profil'
     | '/dev/figur'
     | '/dev/identitet'
     | '/dev/ui'
@@ -246,6 +277,8 @@ export interface FileRouteTypes {
     | '/organisation'
     | '/app/arende/$id'
     | '/app/flack/$id'
+    | '/app/kunskap/$artikel'
+    | '/app/kunskap'
   id:
     | '__root__'
     | '/'
@@ -259,6 +292,7 @@ export interface FileRouteTypes {
     | '/tvafaktor'
     | '/app/arenden'
     | '/app/ny-kontroll'
+    | '/app/profil'
     | '/dev/figur'
     | '/dev/identitet'
     | '/dev/ui'
@@ -269,6 +303,8 @@ export interface FileRouteTypes {
     | '/organisation/'
     | '/app/arende/$id'
     | '/app/flack/$id'
+    | '/app/kunskap/$artikel'
+    | '/app/kunskap/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -380,6 +416,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppNyKontrollRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/app/profil': {
+      id: '/app/profil'
+      path: '/profil'
+      fullPath: '/app/profil'
+      preLoaderRoute: typeof AppProfilRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/dev/figur': {
       id: '/dev/figur'
       path: '/dev/figur'
@@ -436,6 +479,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppFlackIdRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/app/kunskap/': {
+      id: '/app/kunskap/'
+      path: '/kunskap'
+      fullPath: '/app/kunskap/'
+      preLoaderRoute: typeof AppKunskapIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/app/kunskap/$artikel': {
+      id: '/app/kunskap/$artikel'
+      path: '/kunskap/$artikel'
+      fullPath: '/app/kunskap/$artikel'
+      preLoaderRoute: typeof AppKunskapArtikelRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
   }
 }
 
@@ -454,17 +511,23 @@ const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
 interface AppRouteRouteChildren {
   AppArendenRoute: typeof AppArendenRoute
   AppNyKontrollRoute: typeof AppNyKontrollRoute
+  AppProfilRoute: typeof AppProfilRoute
   AppIndexRoute: typeof AppIndexRoute
   AppArendeIdRoute: typeof AppArendeIdRoute
   AppFlackIdRoute: typeof AppFlackIdRoute
+  AppKunskapArtikelRoute: typeof AppKunskapArtikelRoute
+  AppKunskapIndexRoute: typeof AppKunskapIndexRoute
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppArendenRoute: AppArendenRoute,
   AppNyKontrollRoute: AppNyKontrollRoute,
+  AppProfilRoute: AppProfilRoute,
   AppIndexRoute: AppIndexRoute,
   AppArendeIdRoute: AppArendeIdRoute,
   AppFlackIdRoute: AppFlackIdRoute,
+  AppKunskapArtikelRoute: AppKunskapArtikelRoute,
+  AppKunskapIndexRoute: AppKunskapIndexRoute,
 }
 
 const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(

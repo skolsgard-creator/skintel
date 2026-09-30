@@ -4,12 +4,18 @@ import { cn } from "@/lib/utils";
 // Sidans grundmått och rubriknivåer. Allt är mobile-first: en kolumn,
 // 16 px marginal, max ~32 rem bred så att raderna inte blir för långa på
 // en surfplatta eller dator.
+//
+// Safe area i överkant hör inte hit. Den låg här som pt-safe, men pt-safe
+// står efter pt-4/pt-6/pt-10 i CSS:en och vann därför över sidans egen
+// luft -- rubrikerna hamnade i överkanten. Appens ram (src/routes/app/
+// route.tsx) lägger safe area utanför sidan i stället, så att de två läggs
+// ihop.
 
 function Page({ className, ...props }: React.ComponentProps<"main">) {
   return (
     <main
       data-slot="page"
-      className={cn("mx-auto flex w-full max-w-lg flex-col gap-6 px-4 pt-safe pb-10", className)}
+      className={cn("mx-auto flex w-full max-w-lg flex-col gap-6 px-4 pb-10", className)}
       {...props}
     />
   );

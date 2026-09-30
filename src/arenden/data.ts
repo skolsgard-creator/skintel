@@ -13,7 +13,8 @@ import type { CasePhoto, CaseRecord, CaseSummary, Reviewer, SpotRef } from "./ty
 // hud-kolls patientväg: patientens egna visningar loggas inte. Loggen
 // (image_access_log) finns för att hon ska se vem UTOM hon själv som läst.
 
-const SUMMARY = "id, spot_id, status, created_at, response_due_at, reviewed_at, dermatologist_outcome";
+/** Det listan och Min hud läser av varje ärende (CaseSummary). */
+export const SUMMARY = "id, spot_id, status, created_at, response_due_at, reviewed_at, dermatologist_outcome, followup_due_at";
 
 const CASE = [
   "id",

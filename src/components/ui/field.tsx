@@ -125,4 +125,13 @@ function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
   );
 }
 
-export { Field, Label, Input, Textarea };
+/** Ett val ur en kort lista (månad, region). Webbläsarens egen väljare --
+ *  i telefonen är den bäst -- med samma form som fälten. */
+function Select({ className, ...props }: React.ComponentProps<"select">) {
+  const control = useControlProps(props);
+  return (
+    <select data-slot="select" className={cn(controlClass, "h-13 px-4", className)} {...props} {...control} />
+  );
+}
+
+export { Field, Label, Input, Textarea, Select };

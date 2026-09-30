@@ -145,3 +145,15 @@ export async function clearDraft(): Promise<void> {
     // Finns inget att rensa, eller går inte att nå: samma sak för anroparen.
   }
 }
+
+/**
+ * Står ett påbörjat utkast i vägen för en ny kontroll av fläcken `spotId`?
+ * Ja när utkastet gäller något annat och har arbete i sig -- foton, svar
+ * eller en notering. Då frågar Ny kontroll innan utkastet ersätts, i
+ * stället för att skriva över det vid första ändringen.
+ */
+export function draftInTheWay(saved: Draft | null, spotId: string | undefined): boolean {
+  if (!saved || !spotId || saved.spotId === spotId) return false;
+  const answered = Object.values(saved.svar).some((v) => v !== null && v !== "");
+  return saved.foton.length > 0 || saved.note.trim() !== "" || answered;
+}

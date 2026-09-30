@@ -8,6 +8,7 @@ import {
   type BodyPoint,
   type BodySide,
   type FigureHandle,
+  type FigureHit,
   type FigureVariant,
 } from "@/figur/kontrakt";
 import { Button } from "@/components/ui/button";
@@ -16,8 +17,9 @@ import { cn } from "@/lib/utils";
 
 // Steg 1: var på kroppen. Tryck på figuren, eller välj region och sida i
 // listan -- den tillgängliga vägen, som också vrider figuren dit. Kroppen
-// väljs första gången och sparas på profilen: alla markeringar bor i en
-// kropps rymd (20260929090000).
+// väljs första gången och sparas på profilen (20260929090000); den går att
+// byta i Profil, och sparade fläckar läggs då om på den nya kroppens yta
+// inom sin region (traff.ts).
 
 type Props = {
   variant: FigureVariant | null;
@@ -42,7 +44,13 @@ export function PlaceStep({ variant, onVariant, selection, onSelect, onContinue 
     if (!sides.includes(side)) setSide(sides[0]!);
   }, [sides, side]);
 
-  const onPick = useCallback((point: BodyPoint) => onSelect(point), [onSelect]);
+  // Platssteget visar inga prickar, så ett tryck gäller alltid kroppen.
+  const onPick = useCallback(
+    (hit: FigureHit) => {
+      if (hit.kind === "body") onSelect(hit.point);
+    },
+    [onSelect],
+  );
 
   function focusRegion() {
     const point = handle?.focus(regionKey, side);
@@ -50,7 +58,7 @@ export function PlaceStep({ variant, onVariant, selection, onSelect, onContinue 
   }
 
   function chooseVariant(next: FigureVariant) {
-    // Markeringar hör till en kropps rymd; en annan kropp börjar tomt.
+    // Punkten valdes på den förra kroppens yta: välj om på den nya.
     onSelect(null);
     onVariant(next);
   }

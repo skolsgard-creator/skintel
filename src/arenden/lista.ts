@@ -1,4 +1,6 @@
-import { isOpen } from "./utfall";
+import { shortDate } from "./datum";
+import { dueShort } from "./klocka";
+import { isOpen, type Tone } from "./utfall";
 import type { CaseSummary, SpotRef } from "./typer";
 
 // Ärendelistan: en rad per fläck med den senaste kontrollen (ritning v2,
@@ -34,4 +36,35 @@ export function groupBySpot(cases: readonly CaseSummary[], spots: readonly SpotR
     if (open !== 0) return open;
     return b.latest.created_at.localeCompare(a.latest.created_at);
   });
+}
+
+/**
+ * Raden under pillret, i ärendelistan och i kortet för en vald fläck: när
+ * svaret kommer eller kom, och hur många kontroller fläcken har. Pillret
+ * säger läget; den här raden säger när. En uppföljning som är här står i ord
+ * och i den varma accenten -- det är den som gör ringen runt fotot
+ * bärnstensfärgad (caseTone), och pillret visar fortfarande förra svaret.
+ */
+export function spotMeta(
+  latest: CaseSummary | null,
+  count: number,
+  now: Date,
+): { text: string; tone: Tone } {
+  if (!latest) return { text: "Ingen kontroll skickad", tone: "primary" };
+  const followupHere =
+    latest.status === "reviewed" &&
+    latest.followup_due_at !== null &&
+    now.getTime() >= new Date(latest.followup_due_at).getTime();
+  const when = followupHere
+    ? "dags för nytt foto"
+    : latest.status === "pending" || latest.status === "in_review"
+      ? dueShort(latest.response_due_at, now)
+      : latest.status === "reviewed" && latest.reviewed_at
+        ? `besvarad ${shortDate(latest.reviewed_at)}`
+        : `skickad ${shortDate(latest.created_at)}`;
+  const text = count > 1 ? `${when} · ${count} kontroller` : when;
+  return {
+    text: text.charAt(0).toUpperCase() + text.slice(1),
+    tone: followupHere ? "amber" : "primary",
+  };
 }

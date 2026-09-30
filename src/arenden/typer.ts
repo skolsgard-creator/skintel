@@ -41,10 +41,17 @@ export type CaseRecord = {
   note: string | null;
 };
 
-/** Det listan behöver av ett ärende. */
+/** Det listan och Min hud behöver av ett ärende. */
 export type CaseSummary = Pick<
   CaseRecord,
-  "id" | "spot_id" | "status" | "created_at" | "response_due_at" | "reviewed_at" | "dermatologist_outcome"
+  | "id"
+  | "spot_id"
+  | "status"
+  | "created_at"
+  | "response_due_at"
+  | "reviewed_at"
+  | "dermatologist_outcome"
+  | "followup_due_at"
 >;
 
 export type SpotRef = { id: string; name: string };

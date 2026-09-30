@@ -72,3 +72,24 @@ export function retakeInstruction(reason: string): string {
     "Ta nya bilder av fläcken i dagsljus, rakt uppifrån, med fläcken i mitten av ringen."
   );
 }
+
+/** Färgen en fläck bär i listorna och på figuren. */
+export type Tone = "primary" | "amber";
+
+/**
+ * Bärnsten när något väntar på patienten -- nya bilder, ett svar om förhöjd
+ * risk eller besök på plats, en uppföljning som är här. Blågrön när det
+ * rullar på av sig självt, och för en fläck utan kontroll. Samma färgspråk
+ * som pillerna ovan; risken står ändå alltid i ord.
+ */
+export function caseTone(
+  c: { status: CaseStatus; dermatologist_outcome: Outcome | null; followup_due_at: string | null } | null,
+  now: Date,
+): Tone {
+  if (!c) return "primary";
+  if (c.status === "insufficient_images") return "amber";
+  if (c.status !== "reviewed") return "primary";
+  if (c.dermatologist_outcome === "forhojd" || c.dermatologist_outcome === "needs_in_person") return "amber";
+  if (c.followup_due_at && now.getTime() >= new Date(c.followup_due_at).getTime()) return "amber";
+  return "primary";
+}

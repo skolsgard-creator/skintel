@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Display, Eyebrow, Lede, Title } from "@/components/ui/page";
 import { Pill } from "@/components/ui/pill";
 import { DURATION_OPTIONS, SYMPTOM_QUESTIONS, TRI_OPTIONS } from "./fragor";
-import { PHOTO_ORDER, PHOTO_SPECS, useObjectUrl } from "./steg-foton";
+import { PHOTO_ORDER, PHOTO_SPECS } from "./fotoguide";
+import { useObjectUrl } from "./steg-foton";
 import type { Draft } from "./utkast";
 
 // Steg 4: sammanfattningen och knappen. Det som skickas visas som det

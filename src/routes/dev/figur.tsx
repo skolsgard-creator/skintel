@@ -10,6 +10,7 @@ import {
   type BodyPoint,
   type BodySide,
   type FigureHandle,
+  type FigureHit,
   type FigureStats,
   type FigureVariant,
 } from "@/figur/kontrakt";
@@ -50,6 +51,7 @@ function FigurePage() {
   const [handle, setHandle] = useState<FigureHandle | null>(null);
   const [selection, setSelection] = useState<BodyPoint | null>(null);
   const [markers, setMarkers] = useState<BodyMarker[]>([]);
+  const [hitMarker, setHitMarker] = useState<string | null>(null);
   const [stats, setStats] = useState<FigureStats | null>(null);
   const [fps, setFps] = useState<number | null>(null);
   const [size, setSize] = useState<{ kb: number; compressed: boolean } | null>(null);
@@ -76,7 +78,11 @@ function FigurePage() {
     setTimeout(() => setSize(transferred()), 300);
   }, []);
 
-  const onPick = useCallback((point: BodyPoint) => setSelection(point), []);
+  // Ett tryck nära en prick träffar pricken; annars kroppen.
+  const onPick = useCallback((hit: FigureHit) => {
+    setHitMarker(hit.kind === "marker" ? hit.id : null);
+    setSelection(hit.kind === "body" ? hit.point : null);
+  }, []);
 
   function focusRegion() {
     const point = handle?.focus(regionKey, side);
@@ -84,15 +90,26 @@ function FigurePage() {
   }
 
   function switchVariant(next: FigureVariant) {
-    // Markeringar hör till en kropps rymd; en annan kropp börjar tomt.
+    // Valet hör till kroppen det gjordes på. Prickarna följer med och läggs
+    // på den nya kroppens hud (traff.ts) -- det är det här sidan visar.
     setVariant(next);
     setSelection(null);
-    setMarkers([]);
+    setHitMarker(null);
   }
 
   function addMarker() {
     if (!selection) return;
-    setMarkers((m) => [...m, { id: `${Date.now()}`, position: selection.position, normal: selection.normal }]);
+    setMarkers((m) => [
+      ...m,
+      {
+        id: `${Date.now()}`,
+        regionKey: selection.regionKey,
+        // Varannan prick i bärnsten, så att båda färgerna syns på provsidan.
+        tone: m.length % 2 === 0 ? "primary" : "amber",
+        position: selection.position,
+        normal: selection.normal,
+      },
+    ]);
     setSelection(null);
   }
 
@@ -150,7 +167,13 @@ function FigurePage() {
         ) : null}
         <div className="flex min-h-12 items-center justify-between gap-3">
           <div>
-            <p className="font-medium">{selection ? selection.label : "Tryck på figuren"}</p>
+            <p className="font-medium">
+              {selection
+                ? selection.label
+                : hitMarker
+                  ? `Fläck ${markers.findIndex((m) => m.id === hitMarker) + 1} träffad`
+                  : "Tryck på figuren"}
+            </p>
             {selection ? (
               <p className="font-mono text-xs tabular-nums text-muted-foreground">
                 {selection.regionKey} · {selection.side} · ({selection.position.map((v) => v.toFixed(2)).join(", ")})

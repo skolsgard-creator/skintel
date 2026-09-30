@@ -23,11 +23,23 @@ export type BodyPoint = {
   normal: Vec3;
 };
 
+/** En prick på figuren. Positionen är den sparade; figuren lägger pricken
+ *  på närmaste punkt på den kropp som visas, inom prickens region
+ *  (traff.ts), så en fläck som sparades när en annan kropp var vald -- eller
+ *  på hud-kolls figur -- ändå hamnar på huden, på rätt kroppsdel. Utan
+ *  känd region (null) räknas hela kroppen. */
 export type BodyMarker = {
   id: string;
+  regionKey: string | null;
+  /** Prickens färg: blågrön, eller bärnsten när något väntar på patienten
+   *  (caseTone i src/arenden/utfall.ts). */
+  tone: "primary" | "amber";
   position: Vec3;
   normal: Vec3;
 };
+
+/** Ett kort tryck på figuren: på en prick, på kroppen, eller bredvid den. */
+export type FigureHit = { kind: "marker"; id: string } | { kind: "body"; point: BodyPoint } | { kind: "none" };
 
 export type FigureStats = {
   /** Millisekunder från att figuren började monteras till första ritade bilden. */
@@ -36,7 +48,7 @@ export type FigureStats = {
 };
 
 export type FigureHandle = {
-  /** Byter kropp. Markeringar och val hör till en kropps rymd och rensas av anroparen. */
+  /** Byter kropp. Prickarna läggs om på den nya kroppens yta; valet rensas. */
   setVariant(variant: FigureVariant): Promise<void>;
   setMarkers(markers: readonly BodyMarker[]): void;
   /** Den punkt användaren senast valt; ritas som en större markering. */
@@ -44,12 +56,14 @@ export type FigureHandle = {
   /** Vrider figuren mot en region och ger regionens fokuspunkt (tillgänglig väg). */
   focus(regionKey: string, side: BodySide): BodyPoint | null;
   turn(face: "front" | "back"): void;
+  /** Vilken sida kameran visar just nu -- också efter att användaren vridit. */
+  facing(): "front" | "back";
   destroy(): void;
 };
 
 export type FigureOptions = {
   variant: FigureVariant;
-  onPick(point: BodyPoint): void;
+  onPick(hit: FigureHit): void;
   onReady?(stats: FigureStats): void;
   /** Bildfrekvens under rörelse, ungefär en gång per halvsekund. */
   onFps?(fps: number): void;

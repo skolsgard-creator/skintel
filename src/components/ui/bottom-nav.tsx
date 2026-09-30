@@ -11,6 +11,10 @@ import { cn } from "@/lib/utils";
 // mjuk kant ovanför i stället för en hård linje. Med "mindre
 // genomskinlighet" eller "mer kontrast" i systemet blir den fast (app.css).
 // Flikarna namnges för sitt innehåll ("Min hud", inte "Hem").
+//
+// Vilken flik som är aktiv bestäms av den som ritar navigationen, ur
+// adressen (src/appskal/flikar.ts): ett ärende på /app/arende/… hör till
+// fliken Ärenden, vilket routerns egen "aktiv länk" inte kan veta.
 
 type NavItem = {
   key: string;
@@ -24,11 +28,8 @@ type BottomNavProps = {
   items: [NavItem, NavItem, NavItem, NavItem];
   /** Mittknappen. */
   primary: NavItem;
-  /**
-   * Tvingar en flik att visas som aktiv oavsett adress. Bara för
-   * komponentsidan; i appen avgör routern.
-   */
-  activeKey?: string;
+  /** Den aktiva flikens key, eller null när ingen flik gäller. */
+  activeKey: string | null;
   className?: string;
 };
 
@@ -69,29 +70,25 @@ function BottomNav({ items, primary, activeKey, className }: BottomNavProps) {
   );
 }
 
-function Tab({ item, activeKey }: { item: NavItem; activeKey?: string }) {
+function Tab({ item, activeKey }: { item: NavItem; activeKey: string | null }) {
   const Icon = item.icon;
+  const active = activeKey === item.key;
   return (
     <li className="flex">
       <Link
         to={item.to}
-        className="flex flex-1 flex-col items-center justify-center gap-1 rounded-2xl text-xs font-medium outline-none focus-visible:ring-[3px] focus-visible:ring-ring/35"
+        // Routerns egen "aktiv" gäller bara exakt adress, så att den aldrig
+        // markerar Min hud (/app) på varje sida under /app; aria-current
+        // sätts här, ur activeKey.
+        activeOptions={{ exact: true }}
+        aria-current={active ? "page" : undefined}
+        className={cn(
+          "flex flex-1 flex-col items-center justify-center gap-1 rounded-2xl text-xs font-medium outline-none transition-colors motion-fast focus-visible:ring-[3px] focus-visible:ring-ring/35",
+          active ? "text-primary" : "text-muted-foreground",
+        )}
       >
-        {({ isActive }) => {
-          const active = activeKey ? activeKey === item.key : isActive;
-          return (
-            <span
-              className={cn(
-                "flex flex-col items-center gap-1 transition-colors motion-fast",
-                active ? "text-primary" : "text-muted-foreground",
-              )}
-              aria-current={active ? "page" : undefined}
-            >
-              <Icon className="size-6" strokeWidth={active ? 2.25 : 1.75} aria-hidden />
-              {item.label}
-            </span>
-          );
-        }}
+        <Icon className="size-6" strokeWidth={active ? 2.25 : 1.75} aria-hidden />
+        {item.label}
       </Link>
     </li>
   );

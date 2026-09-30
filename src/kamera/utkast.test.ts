@@ -1,6 +1,6 @@
 import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, test } from "vitest";
-import { clearDraft, EMPTY_SYMPTOMS, loadDraft, newDraft, saveDraft, type Draft } from "./utkast";
+import { clearDraft, draftInTheWay, EMPTY_SYMPTOMS, loadDraft, newDraft, saveDraft, type Draft } from "./utkast";
 
 function sample(): Draft {
   const draft = newDraft();
@@ -80,5 +80,25 @@ describe("utkastet", () => {
     expect(draft.foton).toEqual([]);
     expect(draft.svar).toEqual(EMPTY_SYMPTOMS);
     expect(draft.note).toBe("");
+  });
+});
+
+describe("draftInTheWay -- ett påbörjat utkast som en ny kontroll av en fläck skulle ersätta", () => {
+  const SPOT = "4a1c3b2e-7d1f-4b0a-9c1e-2f3a4b5c6d7e";
+
+  test("ett utkast med foton, svar eller notering för en annan fläck står i vägen", () => {
+    expect(draftInTheWay(sample(), SPOT)).toBe(true);
+    const onlyNote = { ...newDraft(), note: "skaver" };
+    expect(draftInTheWay(onlyNote, SPOT)).toBe(true);
+    const onlyAnswer = { ...newDraft(), svar: { ...EMPTY_SYMPTOMS, has_changed: "nej" as const } };
+    expect(draftInTheWay(onlyAnswer, SPOT)).toBe(true);
+  });
+
+  test("inget står i vägen utan fläck, utan utkast, för samma fläck eller för ett tomt utkast", () => {
+    expect(draftInTheWay(sample(), undefined)).toBe(false);
+    expect(draftInTheWay(null, SPOT)).toBe(false);
+    expect(draftInTheWay({ ...sample(), spotId: SPOT }, SPOT)).toBe(false);
+    // Bara en vald plats är inget arbete att förlora.
+    expect(draftInTheWay({ ...newDraft(), plats: sample().plats }, SPOT)).toBe(false);
   });
 });

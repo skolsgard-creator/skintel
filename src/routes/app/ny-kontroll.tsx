@@ -10,7 +10,7 @@ import { PlaceStep } from "@/kamera/steg-plats";
 import { PhotosStep } from "@/kamera/steg-foton";
 import { QuestionsStep } from "@/kamera/steg-fragor";
 import { Receipt, SendStep } from "@/kamera/steg-skicka";
-import { clearDraft, loadDraft, newDraft, saveDraft, type Draft, type DraftStep } from "@/kamera/utkast";
+import { clearDraft, draftInTheWay, loadDraft, newDraft, saveDraft, type Draft, type DraftStep } from "@/kamera/utkast";
 import { cn } from "@/lib/utils";
 
 // Ny kontroll: fyra steg i helskärm -- plats, foton, frågor, skicka
@@ -25,6 +25,8 @@ type Search = { flack?: string };
 export const Route = createFileRoute("/app/ny-kontroll")({
   validateSearch: (search: Record<string, unknown>): Search =>
     typeof search["flack"] === "string" && /^[0-9a-f-]{36}$/i.test(search["flack"]) ? { flack: search["flack"] } : {},
+  // Helskärm: appens meny visas inte medan man fotograferar.
+  staticData: { helskarm: true },
   component: NewCheck,
 });
 
@@ -32,6 +34,7 @@ type Phase =
   | { kind: "loading" }
   | { kind: "blocked"; readiness: Extract<Readiness, { ok: false }> }
   | { kind: "error"; message: string }
+  | { kind: "conflict"; entitlement: string; spotId: string }
   | { kind: "steps"; entitlement: string }
   | { kind: "done"; dueAt: string | null; reviewId: string | null };
 
@@ -63,6 +66,11 @@ function NewCheck() {
           return;
         }
         setVariant(readiness.figureVariant);
+        if (flack && draftInTheWay(saved, flack)) {
+          // Ett påbörjat utkast för något annat: fråga innan det ersätts.
+          setPhase({ kind: "conflict", entitlement: readiness.entitlement, spotId: flack });
+          return;
+        }
         let next = saved ?? newDraft();
         if (flack && next.spotId !== flack) {
           // Ny kontroll av en befintlig fläck: platsen är given.
@@ -160,6 +168,40 @@ function NewCheck() {
 
   if (phase.kind === "blocked") return <Blocked reason={phase.readiness.reason} />;
 
+  if (phase.kind === "conflict") {
+    const { entitlement, spotId } = phase;
+    return (
+      <Shell>
+        <div className="flex flex-col gap-4 px-4 pt-10">
+          <Eyebrow>Ny kontroll</Eyebrow>
+          <Display>Du har en påbörjad kontroll.</Display>
+          <Lede>
+            Den har foton eller svar som inte är skickade. Fortsätt med den, eller börja om med fläcken du valde. Börjar du
+            om försvinner det påbörjade.
+          </Lede>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild>
+              <Link to="/app/ny-kontroll" replace>
+                Fortsätt den påbörjade
+              </Link>
+            </Button>
+            <Button
+              variant="outline"
+              onClick={async () => {
+                await clearDraft();
+                setDraft({ ...newDraft(), spotId, step: 2 });
+                setResumed(false);
+                setPhase({ kind: "steps", entitlement });
+              }}
+            >
+              Börja om med fläcken
+            </Button>
+          </div>
+        </div>
+      </Shell>
+    );
+  }
+
   if (phase.kind === "error") {
     return (
       <Shell>
@@ -186,7 +228,7 @@ function NewCheck() {
 
   return (
     <Shell>
-      <header className="flex items-center justify-between gap-3 px-4 pt-safe">
+      <header className="flex items-center justify-between gap-3 px-4">
         <div className="pt-3">
           <Eyebrow className="whitespace-nowrap">
             Steg {draft.step} av 4 · {STEP_LABEL[draft.step]}
@@ -255,8 +297,15 @@ function NewCheck() {
   );
 }
 
+/** Helskärmen: utan appens meny, och med telefonens safe area i överkant
+ *  för alla lägen (stegen, spärren, felet, kvittot) -- appens ram lägger
+ *  den inte på helskärmssidor. */
 function Shell({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn("mx-auto flex h-dvh w-full max-w-lg flex-col bg-background text-foreground", className)}>{children}</div>;
+  return (
+    <div className={cn("mx-auto flex h-dvh w-full max-w-lg flex-col bg-background pt-safe text-foreground", className)}>
+      {children}
+    </div>
+  );
 }
 
 const BLOCKED_TEXT: Record<Extract<Readiness, { ok: false }>["reason"], { title: string; text: string }> = {
@@ -266,7 +315,7 @@ const BLOCKED_TEXT: Record<Extract<Readiness, { ok: false }>["reason"], { title:
   },
   terms_not_accepted: {
     title: "Villkoren behöver godkännas först.",
-    text: "Innan en kontroll kan skickas behöver du godkänna villkoren och integritetspolicyn. Det gör du under Profil.",
+    text: "Innan en kontroll kan skickas behöver villkoren och integritetspolicyn vara godkända för ditt konto.",
   },
   profile_incomplete: {
     title: "Profilen behöver fyllas i först.",
@@ -276,15 +325,25 @@ const BLOCKED_TEXT: Record<Extract<Readiness, { ok: false }>["reason"], { title:
 
 function Blocked({ reason }: { reason: Extract<Readiness, { ok: false }>["reason"] }) {
   const t = BLOCKED_TEXT[reason];
+  // Koden från arbetsgivaren och uppgifterna åtgärdas under Profil;
+  // villkoren går inte att godkänna i appen ännu (3.7).
+  const inProfile = reason === "no_entitlement" || reason === "profile_incomplete";
   return (
     <Shell>
       <div className="flex flex-col gap-4 px-4 pt-10">
         <Eyebrow>Ny kontroll</Eyebrow>
         <Display>{t.title}</Display>
         <Lede>{t.text}</Lede>
-        <Button asChild variant="outline" className="self-start">
-          <Link to="/app">Till appen</Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {inProfile ? (
+            <Button asChild>
+              <Link to="/app/profil">Till Profil</Link>
+            </Button>
+          ) : null}
+          <Button asChild variant="outline">
+            <Link to="/app">Till appen</Link>
+          </Button>
+        </div>
       </div>
     </Shell>
   );

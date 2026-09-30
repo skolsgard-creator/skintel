@@ -1,6 +1,7 @@
 import {
   BufferAttribute,
   BufferGeometry,
+  CanvasTexture,
   CircleGeometry,
   Color,
   DirectionalLight,
@@ -10,6 +11,7 @@ import {
   MeshBasicMaterial,
   MeshStandardMaterial,
   PerspectiveCamera,
+  PlaneGeometry,
   Raycaster,
   Scene,
   TorusGeometry,
@@ -28,6 +30,7 @@ import {
   type Vec3,
 } from "./kontrakt";
 import { loadFigure } from "./ladda";
+import { closestPointOnMesh, nearestMarker, trianglesInRegion } from "./traff";
 
 // 3D-figuren (steg 3.1, prov). Ren three.js-kärna utan react-three-fiber
 // eller drei: ett mesh, tre ljus, en kamera som kretsar kring figuren, och
@@ -49,6 +52,9 @@ const DEFAULT_PITCH = 0.06;
 const TURN_PER_PIXEL = (2 * Math.PI) / 1.4;
 const TAP_MAX_PX = 6;
 const TAP_MAX_MS = 350;
+/** Ett tryck inom så här många skärmpixlar från en prick träffar den
+ *  (en fingertopp, ungefär 44 punkter i diameter). */
+const MARKER_HIT_PX = 22;
 const FRICTION = 4; // per sekund, för svängen efter släpp
 const SPRING_K = 140;
 const SPRING_C = 2 * Math.sqrt(SPRING_K); // kritiskt dämpad: ingen överskjutning
@@ -135,15 +141,43 @@ export async function mountFigure(container: HTMLElement, options: FigureOptions
   const body = new Mesh(geometry, material);
   scene.add(body);
 
+  // Skuggan under fötterna: en mjuk, platt fläck på golvet (y = 0), så att
+  // figuren står på något i stället för att sväva. Den ligger i scenen och
+  // följer kameran när man vrider och zoomar; tryck träffar bara kroppen.
+  const shadowCanvas = document.createElement("canvas");
+  shadowCanvas.width = 128;
+  shadowCanvas.height = 128;
+  const shadowCtx = shadowCanvas.getContext("2d");
+  if (shadowCtx) {
+    const g = shadowCtx.createRadialGradient(64, 64, 0, 64, 64, 64);
+    g.addColorStop(0, "rgba(46, 38, 30, 0.26)");
+    g.addColorStop(0.55, "rgba(46, 38, 30, 0.10)");
+    g.addColorStop(1, "rgba(46, 38, 30, 0)");
+    shadowCtx.fillStyle = g;
+    shadowCtx.fillRect(0, 0, 128, 128);
+  }
+  const shadowTexture = new CanvasTexture(shadowCanvas);
+  const shadowGeometry = new PlaneGeometry(1.0, 1.1);
+  const shadowMaterial = new MeshBasicMaterial({ map: shadowTexture, transparent: true, depthWrite: false });
+  const shadow = new Mesh(shadowGeometry, shadowMaterial);
+  shadow.rotation.x = -Math.PI / 2;
+  shadow.position.set(0, 0.002, 0.03);
+  scene.add(shadow);
+
   const markerGroup = new Group();
   scene.add(markerGroup);
   const markerMaterial = new MeshBasicMaterial({ color: primary });
+  // Bärnsten för fläckar där något väntar på patienten. Den mörka tonen
+  // (amber-ink): den ljusa accenten syns för dåligt mot figurens papperston.
+  const amberMaterial = new MeshBasicMaterial({ color: cssColor("--color-amber-ink", "#8a5a1c") });
   const ringGeometry = new TorusGeometry(0.03, 0.0045, 8, 40);
   const dotGeometry = new CircleGeometry(0.011, 24);
   const selectionRingGeometry = new TorusGeometry(0.042, 0.0055, 8, 48);
   const selectionDotGeometry = new CircleGeometry(0.014, 24);
 
   let regions: Uint8Array = new Uint8Array(0);
+  let meshPositions: Float32Array = new Float32Array(0);
+  let meshIndex: Uint16Array = new Uint16Array(0);
   let triangles = 0;
 
   // Kameran i sfäriska koordinater kring en målpunkt.
@@ -338,8 +372,14 @@ export async function mountFigure(container: HTMLElement, options: FigureOptions
     if (pointers.size === 0 && down) {
       const isTap = down.moved < TAP_MAX_PX && e.timeStamp - down.time < TAP_MAX_MS;
       if (isTap) {
-        const point = pick(e.clientX, e.clientY);
-        if (point) options.onPick(point);
+        // En prick nära trycket vinner över kroppen under den.
+        const markerId = pickMarker(e.clientX, e.clientY);
+        if (markerId) {
+          options.onPick({ kind: "marker", id: markerId });
+        } else {
+          const point = pick(e.clientX, e.clientY);
+          options.onPick(point ? { kind: "body", point } : { kind: "none" });
+        }
       } else if (!instant && lastMove && e.timeStamp - lastMove.time < 80) {
         yawVelocity = Math.max(-12, Math.min(12, lastVelocity));
         requestFrame();
@@ -364,42 +404,108 @@ export async function mountFigure(container: HTMLElement, options: FigureOptions
   canvas.addEventListener("wheel", onWheel, { passive: false });
 
   // Markeringar: pricken med ring, som i logotypen, lagd platt mot huden.
+  // Den sparade punkten läggs på närmaste punkt på den kropp som visas
+  // (traff.ts); prickarna minns sina punkter och läggs om när kroppen byts.
   const markerMeshes: Group[] = [];
   let selectionGroup: Group | null = null;
+  let currentMarkers: readonly BodyMarker[] = [];
+  let currentSelection: BodyPoint | null = null;
+  /** Prickarna där de ligger på ytan -- det som ett tryck prövas mot. */
+  let placed: { id: string; position: Vector3; normal: Vector3 }[] = [];
 
-  function makeMarker(position: Vec3, normal: Vec3, selected: boolean): Group {
+  /** Trianglarna per region på den kropp som visas; töms när kroppen byts. */
+  const regionTriangles = new Map<string, Uint32Array>();
+
+  function trianglesFor(regionKey: string | null): ArrayLike<number> {
+    const id = regionKey ? BODY_REGIONS.findIndex((r) => r.key === regionKey) : -1;
+    if (id < 0) return meshIndex;
+    let triangles = regionTriangles.get(regionKey!);
+    if (!triangles) {
+      triangles = trianglesInRegion(meshIndex, regions, id);
+      regionTriangles.set(regionKey!, triangles);
+    }
+    return triangles.length > 0 ? triangles : meshIndex;
+  }
+
+  /** Den sparade punkten på ytan av den kropp som visas, inom sin region. */
+  function onSurface(position: Vec3, normal: Vec3, regionKey: string | null): { position: Vector3; normal: Vector3 } {
+    const hit = closestPointOnMesh(meshPositions, trianglesFor(regionKey), position);
+    const p = hit ? hit.point : position;
+    const n = hit ? hit.normal : normal;
+    return { position: new Vector3(...p), normal: new Vector3(...n).normalize() };
+  }
+
+  function makeMarker(position: Vector3, normal: Vector3, selected: boolean, tone: BodyMarker["tone"]): Group {
     const g = new Group();
-    const n = new Vector3(...normal).normalize();
-    const p = new Vector3(...position).addScaledVector(n, 0.004);
+    const p = position.clone().addScaledVector(normal, 0.004);
     g.position.copy(p);
-    g.lookAt(p.clone().add(n));
-    const ring = new Mesh(selected ? selectionRingGeometry : ringGeometry, markerMaterial);
-    const dot = new Mesh(selected ? selectionDotGeometry : dotGeometry, markerMaterial);
+    g.lookAt(p.clone().add(normal));
+    const material = tone === "amber" ? amberMaterial : markerMaterial;
+    const ring = new Mesh(selected ? selectionRingGeometry : ringGeometry, material);
+    const dot = new Mesh(selected ? selectionDotGeometry : dotGeometry, material);
     g.add(ring, dot);
     return g;
   }
 
-  function setMarkers(markers: readonly BodyMarker[]) {
+  function placeMarkers() {
     for (const m of markerMeshes) markerGroup.remove(m);
     markerMeshes.length = 0;
-    for (const m of markers) {
-      const g = makeMarker(m.position, m.normal, false);
+    placed = [];
+    for (const m of currentMarkers) {
+      const s = onSurface(m.position, m.normal, m.regionKey);
+      const g = makeMarker(s.position, s.normal, false, m.tone);
       markerMeshes.push(g);
       markerGroup.add(g);
+      placed.push({ id: m.id, position: s.position, normal: s.normal });
     }
     invalidate();
   }
 
-  function setSelection(point: BodyPoint | null) {
+  function placeSelection() {
     if (selectionGroup) {
       markerGroup.remove(selectionGroup);
       selectionGroup = null;
     }
-    if (point) {
-      selectionGroup = makeMarker(point.position, point.normal, true);
+    if (currentSelection) {
+      const s = onSurface(currentSelection.position, currentSelection.normal, currentSelection.regionKey || null);
+      // Valet är blågrönt: det betyder "svarar på tryck", vilken färg
+      // pricken än har.
+      selectionGroup = makeMarker(s.position, s.normal, true, "primary");
       markerGroup.add(selectionGroup);
     }
     invalidate();
+  }
+
+  function setMarkers(markers: readonly BodyMarker[]) {
+    currentMarkers = markers;
+    placeMarkers();
+  }
+
+  function setSelection(point: BodyPoint | null) {
+    currentSelection = point;
+    placeSelection();
+  }
+
+  /** Pricken under trycket: nära på skärmen, vänd mot kameran och inte
+   *  skymd av en annan del av kroppen (en arm framför bålen). */
+  function pickMarker(clientX: number, clientY: number): string | null {
+    if (placed.length === 0) return null;
+    const rect = canvas.getBoundingClientRect();
+    const byId = new Map(placed.map((m) => [m.id, m]));
+    const projected = placed.map((m) => {
+      const v = m.position.clone().project(camera);
+      return { id: m.id, x: ((v.x + 1) / 2) * rect.width, y: ((1 - v.y) / 2) * rect.height };
+    });
+    return nearestMarker(projected, { x: clientX - rect.left, y: clientY - rect.top }, MARKER_HIT_PX, (id) => {
+      const m = byId.get(id);
+      if (!m) return false;
+      const toCamera = camera.position.clone().sub(m.position);
+      if (toCamera.dot(m.normal) <= 0) return false;
+      const distance = toCamera.length();
+      raycaster.set(camera.position, m.position.clone().sub(camera.position).normalize());
+      const hit = raycaster.intersectObject(body, false)[0];
+      return !hit || hit.distance >= distance - 0.01;
+    });
   }
 
   /** Närmaste väg runt varvet till en vinkel. */
@@ -431,6 +537,10 @@ export async function mountFigure(container: HTMLElement, options: FigureOptions
     };
   }
 
+  function facing(): "front" | "back" {
+    return Math.cos(yaw.goal) >= 0 ? "front" : "back";
+  }
+
   function turn(face: "front" | "back") {
     turnTo(face === "front" ? 0 : Math.PI);
     pitch.goal = DEFAULT_PITCH;
@@ -451,10 +561,17 @@ export async function mountFigure(container: HTMLElement, options: FigureOptions
     geometry.dispose();
     material.dispose();
     markerMaterial.dispose();
+    amberMaterial.dispose();
+    shadowGeometry.dispose();
+    shadowMaterial.dispose();
+    shadowTexture.dispose();
     ringGeometry.dispose();
     dotGeometry.dispose();
     selectionRingGeometry.dispose();
     selectionDotGeometry.dispose();
+    // dispose() släpper inte WebGL-kontexten; utan det här samlas en kontext
+    // per besök på Min hud tills webbläsaren tar slut på dem (ungefär 16).
+    renderer.forceContextLoss();
     renderer.dispose();
     canvas.remove();
   }
@@ -465,7 +582,13 @@ export async function mountFigure(container: HTMLElement, options: FigureOptions
     geometry.computeVertexNormals();
     geometry.computeBoundingSphere();
     regions = mesh.regions;
+    meshPositions = mesh.positions;
+    meshIndex = mesh.index;
+    regionTriangles.clear();
     triangles = mesh.triangleCount;
+    // Prickarna och valet läggs på den här kroppens yta.
+    placeMarkers();
+    placeSelection();
     invalidate();
   }
 
@@ -475,14 +598,14 @@ export async function mountFigure(container: HTMLElement, options: FigureOptions
     variant = next;
     const load = ++variantLoad;
     const mesh = await loadFigure(FIGURES[next].url);
-    // En senare växling vinner; markeringar rensas av anroparen.
+    // En senare växling vinner. Valet hör till den kropp det gjordes på;
+    // prickarna följer med till den nya.
     if (destroyed || load !== variantLoad) return;
-    setSelection(null);
-    setMarkers([]);
+    currentSelection = null;
     useMesh(mesh);
   }
 
-  const handle: FigureHandle = { setVariant, setMarkers, setSelection, focus, turn, destroy };
+  const handle: FigureHandle = { setVariant, setMarkers, setSelection, focus, turn, facing, destroy };
   const mesh = await meshPromise;
   if (destroyed) return handle;
   useMesh(mesh);

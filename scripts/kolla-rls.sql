@@ -735,6 +735,56 @@ BEGIN
 END $$;
 RESET ROLE;
 
+/* ---------------------------------------------------------------------
+   42. 18-årsgränsen (regel 8) bor i databasen: appen skriver födelseår och
+       -månad från Profil (appskalet). Patienten kan spara uppgifterna som
+       vuxen, men ett år som gör hen yngre än 18 stoppas av triggern
+       enforce_minimum_age (under_18) -- vad formuläret än släpper igenom.
+       Båda försöken rullas tillbaka.
+   --------------------------------------------------------------------- */
+SET ROLE authenticated;
+SELECT set_config('request.jwt.claims', json_build_object('sub',(SELECT patient FROM _aktorer))::text, false);
+DO $$
+DECLARE
+  _p      uuid := (SELECT patient FROM _aktorer);
+  _ar     int  := date_part('year', current_date)::int;
+  -- Gränsen, samma räkning som appen (src/profil/uppgifter.ts): född i den
+  -- här månaden för 18 år sedan har fyllt 18; född nästa månad har inte det.
+  _fyllt  date := (date_trunc('month', current_date) - interval '18 years')::date;
+  _snart  date := (date_trunc('month', current_date) - interval '18 years' + interval '1 month')::date;
+BEGIN
+  BEGIN
+    UPDATE public.profiles SET birth_year = _ar - 30, birth_month = 1, skin_type = 'III' WHERE id = _p;
+    IF NOT FOUND THEN RAISE EXCEPTION 'utfall:ingen rad'; END IF;
+    RAISE EXCEPTION 'utfall:ok';
+  EXCEPTION WHEN OTHERS THEN
+    INSERT INTO _resultat VALUES (42,'patienten kan spara födelseår, månad och hudtyp',
+      CASE WHEN SQLERRM = 'utfall:ok' THEN 'OK' ELSE 'FEL: '||SQLERRM END);
+  END;
+  BEGIN
+    UPDATE public.profiles SET birth_year = _ar - 10, birth_month = 1 WHERE id = _p;
+    RAISE EXCEPTION 'gick_igenom';
+  EXCEPTION WHEN OTHERS THEN
+    INSERT INTO _resultat VALUES (42,'ett födelseår under 18 år stoppas av databasen',
+      CASE WHEN SQLERRM = 'under_18' THEN 'OK: under_18' ELSE 'FEL: '||SQLERRM END);
+  END;
+  BEGIN
+    UPDATE public.profiles SET birth_year = date_part('year', _fyllt), birth_month = date_part('month', _fyllt) WHERE id = _p;
+    RAISE EXCEPTION 'utfall:ok';
+  EXCEPTION WHEN OTHERS THEN
+    INSERT INTO _resultat VALUES (42,'född denna månad för 18 år sedan godtas',
+      CASE WHEN SQLERRM = 'utfall:ok' THEN 'OK' ELSE 'FEL: '||SQLERRM END);
+  END;
+  BEGIN
+    UPDATE public.profiles SET birth_year = date_part('year', _snart), birth_month = date_part('month', _snart) WHERE id = _p;
+    RAISE EXCEPTION 'gick_igenom';
+  EXCEPTION WHEN OTHERS THEN
+    INSERT INTO _resultat VALUES (42,'fyller 18 nästa månad stoppas',
+      CASE WHEN SQLERRM = 'under_18' THEN 'OK: under_18' ELSE 'FEL: '||SQLERRM END);
+  END;
+END $$;
+RESET ROLE;
+
 SELECT n, kontroll, utfall,
        CASE WHEN utfall LIKE 'FEL%' THEN '<<<<<' ELSE '' END AS flagga
   FROM _resultat ORDER BY n, kontroll;

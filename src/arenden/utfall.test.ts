@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { isOpen, outcomeLabel, RETAKE_REASONS, retakeInstruction, statusPill } from "./utfall";
+import { caseTone, isOpen, outcomeLabel, RETAKE_REASONS, retakeInstruction, statusPill } from "./utfall";
 
 describe("outcomeLabel", () => {
   test("de fyra utfallen i ord", () => {
@@ -73,5 +73,31 @@ describe("omtagsinstruktionerna", () => {
     for (const reason of RETAKE_REASONS) {
       expect(retakeInstruction(reason)).not.toMatch(/\bAI\b|cancer|melanom|malign/i);
     }
+  });
+});
+
+describe("caseTone -- fläckens färg i listor och på figuren", () => {
+  const NOW = new Date("2026-09-29T12:00:00Z");
+  const base = { status: "reviewed" as const, dermatologist_outcome: "lag" as const, followup_due_at: null };
+
+  test("bärnsten när något väntar på patienten", () => {
+    expect(caseTone({ status: "insufficient_images", dermatologist_outcome: null, followup_due_at: null }, NOW)).toBe("amber");
+    expect(caseTone({ ...base, dermatologist_outcome: "forhojd" }, NOW)).toBe("amber");
+    expect(caseTone({ ...base, dermatologist_outcome: "needs_in_person" }, NOW)).toBe("amber");
+    // Uppföljningen är här.
+    expect(caseTone({ ...base, followup_due_at: "2026-09-29T11:00:00Z" }, NOW)).toBe("amber");
+  });
+
+  test("blågrön när det rullar på av sig självt", () => {
+    expect(caseTone({ status: "pending", dermatologist_outcome: null, followup_due_at: null }, NOW)).toBe("primary");
+    expect(caseTone({ status: "in_review", dermatologist_outcome: null, followup_due_at: null }, NOW)).toBe("primary");
+    expect(caseTone(base, NOW)).toBe("primary");
+    expect(caseTone({ ...base, dermatologist_outcome: "mattlig" }, NOW)).toBe("primary");
+    // Uppföljningen är inte här ännu.
+    expect(caseTone({ ...base, followup_due_at: "2026-09-29T13:00:00Z" }, NOW)).toBe("primary");
+  });
+
+  test("en fläck utan kontroll är blågrön", () => {
+    expect(caseTone(null, NOW)).toBe("primary");
   });
 });
