@@ -9,13 +9,14 @@ import { FIGURES } from "@/figur/figur-data";
 import { FIGURE_VARIANTS, type FigureVariant } from "@/figur/kontrakt";
 import { signOut } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { JournalButton } from "@/journal/knapp";
 import { loadProfile, saveVariant, type Payer } from "@/profil/data";
 import { birthText, skinTypeText } from "@/profil/uppgifter";
 import { DetailsForm } from "@/profil/uppgifter-form";
 
 // Profil (ritning v2, 4.2), första delen: kontot, uppgifterna hudläkaren
-// ser, kroppen i figuren, vem som betalar kontrollerna, vägarna till de
-// andra vyerna och utloggningen. Hudhistoriken, notiser, tvåfaktor, köp och
+// ser, kroppen i figuren, vem som betalar kontrollerna, hela journalen som
+// PDF (3.4b), vägarna till de andra vyerna och utloggningen. Hudhistoriken, notiser, tvåfaktor, köp och
 // radering kommer i 3.7–3.8 och fas 6–7.
 
 export const Route = createFileRoute("/app/profil")({
@@ -128,6 +129,16 @@ function ProfilePage() {
 
       <Section title="Så betalas dina kontroller">
         <PayerText payer={profile.payer} />
+      </Section>
+
+      <Section title="Din journal">
+        <p className="text-sm text-muted-foreground">
+          Alla dina kontroller som en PDF: hudläkarens brev, fotona, dina svar och vem som har öppnat dina foton.
+        </p>
+        <JournalButton
+          label="Ladda ner hela journalen"
+          make={async () => (await import("@/journal/skapa")).makeFullJournal(session.user.id, email)}
+        />
       </Section>
 
       {views.length > 0 ? (

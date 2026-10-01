@@ -62,12 +62,24 @@ export default defineConfig({
           "**/fraunces-*.woff2",
           "**/inter-*.woff2",
           "**/source-serif-4-{cyrillic,cyrillic-ext,greek,vietnamese}-*.woff2",
+          // Journalen som PDF (3.4b) kräver nät ändå -- den läser ärendena och
+          // fotona -- så jsPDF och journalens kod hämtas först vid tryck.
+          // Typsnitten (.ttf) omfattas inte av globPatterns.
+          "**/skapa-*.js",
+          "**/jspdf*.js",
         ],
       },
     }),
   ],
   resolve: {
-    alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
+    alias: [
+      { find: "@", replacement: fileURLToPath(new URL("./src", import.meta.url)) },
+      // jsPDF:s valfria delar används inte av journalen (se filen).
+      {
+        find: /^(html2canvas|dompurify|canvg)$/,
+        replacement: fileURLToPath(new URL("./src/journal/utan-tillagg.ts", import.meta.url)),
+      },
+    ],
   },
   server: { host: true, port: 8080 },
   preview: { host: true, port: 8080 },

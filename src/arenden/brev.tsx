@@ -6,7 +6,15 @@ import "@fontsource-variable/source-serif-4/wght.css";
 import { Printer } from "lucide-react";
 import { Wordmark } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
-import { caseLine, followupSentence, letterDate, outcomeSentence, paragraphs, showsWayForward } from "./brevtext";
+import {
+  caseLine,
+  followupSentence,
+  letterDate,
+  outcomeSentence,
+  paragraphs,
+  showsWayForward,
+  WAY_FORWARD,
+} from "./brevtext";
 import type { Outcome, Reviewer } from "./typer";
 
 // Brevet från läkaren (ritning v2, avsnitt 3 och 2.4): brevhuvud med
@@ -87,7 +95,7 @@ export function Letter({ verdict, outcome, reviewedAt, followupWeeks, followupDu
 }
 
 /** Vägen till platsen (ritning v2, 2.4): vad man säger på vårdcentralen och
- *  var man hittar vården. Meningen om dermatoskop är ritningens. */
+ *  var man hittar vården. Orden står i brevtext.ts, samma som i journalen. */
 function WayForward() {
   return (
     <section
@@ -95,20 +103,12 @@ function WayForward() {
       className="mt-6 flex flex-col gap-2 rounded-xl bg-amber-soft p-4 text-amber-ink print:bg-transparent print:px-0 print:text-foreground"
     >
       <h2 id="vidare-rubrik" className="font-medium">
-        Så går du vidare
+        {WAY_FORWARD.title}
       </h2>
-      <p className="text-sm leading-relaxed">
-        Kontakta din vårdcentral eller en hudmottagning. Säg att en hudläkare har bedömt via foto att fläcken bör
-        undersökas med dermatoskop, och visa gärna upp det här brevet.
-      </p>
+      <p className="text-sm leading-relaxed">{WAY_FORWARD.text}</p>
       <p className="text-sm print:hidden">
-        <a
-          href="https://www.1177.se"
-          target="_blank"
-          rel="noreferrer"
-          className="font-medium underline underline-offset-4"
-        >
-          Hitta och kontakta vården på 1177
+        <a href={WAY_FORWARD.href} target="_blank" rel="noreferrer" className="font-medium underline underline-offset-4">
+          {WAY_FORWARD.linkText}
         </a>
       </p>
     </section>

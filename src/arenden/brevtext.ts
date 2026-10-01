@@ -61,3 +61,14 @@ export function caseLine(spotName: string, photoCount: number): string {
 export function showsWayForward(outcome: Outcome | null): boolean {
   return outcome === "forhojd" || outcome === "needs_in_person";
 }
+
+/** Vägen till platsen: vad man säger på vårdcentralen och var man hittar
+ *  vården. Meningen om dermatoskop är ritningens. Samma ord i brevet på
+ *  skärmen och i journalen. Inte godkänd av en läkare än
+ *  (produkt/fragor-till-ingrid.md, 4.5). */
+export const WAY_FORWARD = {
+  title: "Så går du vidare",
+  text: "Kontakta din vårdcentral eller en hudmottagning. Säg att en hudläkare har bedömt via foto att fläcken bör undersökas med dermatoskop, och visa gärna upp det här brevet.",
+  linkText: "Hitta och kontakta vården på 1177",
+  href: "https://www.1177.se",
+} as const;

@@ -285,8 +285,8 @@ sitt innehåll. Fotoguidens texter finns på ett ställe
 Profil (`/app/profil`, `src/profil/`): e-post, uppgifterna hudläkaren ser
 (födelseår, -månad och hudtyp I–VI; krävs för inskicket), kroppen i
 figuren, vem som betalar (`my_submission_entitlement()`, med "Lös in kod"
-till `/inbjudan` när ingen betalar), de andra vyerna för den som har
-rollerna, och utloggning. 18-årsgränsen kontrolleras i formuläret med samma
+till `/inbjudan` när ingen betalar), hela journalen som PDF (se nedan), de
+andra vyerna för den som har rollerna, och utloggning. 18-årsgränsen kontrolleras i formuläret med samma
 räkning som databasens trigger `enforce_minimum_age` (hela år från den
 första i födelsemånaden) -- och i databasen, som bestämmer; kontroll 42 i
 `kolla-rls.sql` provar det, gränsen inräknad.
@@ -298,6 +298,50 @@ PostgREST och lagring: flikarna, kortets lägen, fotona och ringarnas färger
 figuren ändrar storlek, vändningen efter en vridning för hand, raderna i
 Ärenden, Kunskap, Profil med databasens nej för under 18, helskärmen, frågan
 om ett påbörjat utkast och utloggningen.
+
+## Journalen som PDF (steg 3.4b)
+
+Ärendesidan har "Ladda ner som PDF" (en kontroll, med de andra
+kontrollerna av fläcken listade) och Profil "Ladda ner hela journalen"
+(alla kontroller, en sida per fläck, kontrollerna äldst först). Allt i
+`src/journal/`, och knapparna importerar bara `knapp.tsx`: resten
+(`skapa.ts`, jsPDF, typsnitten) hämtas dynamiskt vid tryck och förcachas
+inte (`globIgnores`). jsPDF:s valfria delar (html2canvas, dompurify, canvg)
+pekas mot `utan-tillagg.ts` i `vite.config.ts` och byggs aldrig.
+
+Kedjan: `data.ts` läser under RLS med kolumnlistor (ärendesidans plus den
+frysta anamnesen, versionerna och läkarens hudtyp) och hämtar fotona som
+byte; `sammanstall.ts` kopplar ihop raderna; `innehall.ts` gör block, med
+en återgivning per ärendetyp i `aterge.ts` (fläckar i `aterge-flack.ts`;
+akne läggs till i `CaseKind` och TypeScript bygger inte förrän den har en
+återgivning); `layout.ts` lägger blocken på A4 (rubrik följer med sin första
+rad, fotorader och tabellrader delas inte, sidfot med "Sida N av M");
+`pdf.ts` ritar med jsPDF. Allt utom `data.ts`, `skapa.ts` och knappen är
+rena funktioner med tester. Samma ord som sidan: svaren ur
+`src/arenden/svarrader.ts`, fotonas namn ur `fotosort.ts`, "Så går du
+vidare" ur `WAY_FORWARD` i `brevtext.ts`.
+
+Fotona bäddas in som de är (JPEG orörd, PNG förlustfritt); ett annat
+format eller en EXIF-orientering ritas om genom `prepareImage` först
+(`bildformat.ts`). Går ett foto inte att hämta blir det ingen PDF alls,
+bara felet och "Försök igen" -- ingen journal med hål. Typsnitten är
+appens egna, statiska TTF ur fontsource-paketen (`scripts/pdf-typsnitt.py`,
+utdata och OFL-licenser i `src/journal/typsnitt/`). På iPhone i
+hemskärmsappen öppnas delningsbladet (`ladda-ner.ts`); vill det ha ett
+färskt tryck visar knappen "Spara PDF:en".
+
+Vem som har öppnat fotona: `my_journal_access()` (`20261001090000`) lämnar
+ut `image_access_log`-raderna för den inloggades egna ärenden med
+granskarens namn och titel, aldrig granskarens id, och också för ärenden
+som lämnats tillbaka till kön (loggen säger vem som öppnade, inte vem som
+bedömde). `logg.ts` visar en rad per person och svensk dag. Kontroll 43 i
+`kolla-rls.sql`. Meddelanden (3.5) och diagnos, remiss och recept (4.2)
+läggs till i återgivningen i sina steg.
+
+`scripts/prov-journal.mjs` provar båda knapparna i headless Chromium mot en
+fejkad PostgREST och lagring, läser PDF:erna med poppler (`pdftotext`,
+`pdfimages`, `pdfinfo`) och jämför med ärendesidans text, fotona (ett med
+EXIF-orientering) och ett foto som inte går att hämta.
 
 ## Regler som inte får brytas (bakgrund i ritningen)
 

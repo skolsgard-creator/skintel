@@ -16,7 +16,8 @@ import type { CasePhoto, CaseRecord, CaseSummary, Reviewer, SpotRef } from "./ty
 /** Det listan och Min hud läser av varje ärende (CaseSummary). */
 export const SUMMARY = "id, spot_id, status, created_at, response_due_at, reviewed_at, dermatologist_outcome, followup_due_at";
 
-const CASE = [
+/** Ärendesidans kolumner; journalen läser samma och lite till. */
+export const CASE_COLUMNS = [
   "id",
   "spot_id",
   "status",
@@ -71,7 +72,7 @@ export async function loadCase(id: string, userId: string): Promise<CaseView | n
   if (!UUID.test(id)) return null;
   const { data, error } = await supabase
     .from("lesion_reviews")
-    .select(CASE)
+    .select(CASE_COLUMNS)
     .eq("id", id)
     .eq("user_id", userId)
     .maybeSingle();

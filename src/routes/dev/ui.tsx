@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/sheet";
 import { BottomNav } from "@/components/ui/bottom-nav";
 import { Display, Eyebrow, Lede, Page, Title } from "@/components/ui/page";
+import { JournalButton } from "@/journal/knapp";
 
 // Komponentsidan: varje byggsten i designsystemet, i mobilen, på en sida.
 // Finns bara i utvecklingsläge -- i det byggda paketet svarar adressen
@@ -340,6 +341,17 @@ function UiPage() {
 
         {/* ---------------------------------------------------------------- */}
         <Section
+          title="Journalknappen"
+          lede="Tar fram journalen som PDF (steg 3.4b). Snurran medan den tas fram, filens namn när den är sparad, orsaken och Försök igen när något går fel. Här med påhittade filer."
+        >
+          <div className="flex flex-col gap-5">
+            <JournalButton label="Ladda ner som PDF" make={demoJournal} />
+            <JournalButton label="Ladda ner hela journalen" make={demoJournalFails} />
+          </div>
+        </Section>
+
+        {/* ---------------------------------------------------------------- */}
+        <Section
           title="Tryck och rörelse"
           lede="Ytor som svarar på tryck mörknar vid nedtryck (100 ms), inte vid släpp. Fjäder utan överskjut som standard."
         >
@@ -461,4 +473,19 @@ function Section({ title, lede, children }: { title: string; lede?: string; chil
 
 function Meta({ children }: { children: ReactNode }) {
   return <p className="font-mono text-xs text-faint">{children}</p>;
+}
+
+/** Journalknappens demo: en liten riktig PDF efter en stund. */
+async function demoJournal(): Promise<File> {
+  await new Promise((resolve) => setTimeout(resolve, 1200));
+  const pdf = "%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj 3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF";
+  return new File([pdf], "skintel-exempel.pdf", { type: "application/pdf" });
+}
+
+/** Journalknappens demo när ett foto inte gick att hämta. */
+async function demoJournalFails(): Promise<File> {
+  await new Promise((resolve) => setTimeout(resolve, 1200));
+  const error = new Error("Ett av fotona kunde inte hämtas, så journalen blev inte klar. Kontrollera uppkopplingen och försök igen.");
+  error.name = "JournalError";
+  throw error;
 }

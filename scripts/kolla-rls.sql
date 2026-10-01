@@ -785,6 +785,100 @@ BEGIN
 END $$;
 RESET ROLE;
 
+/* ---------------------------------------------------------------------
+   43. Journalen (steg 3.4b): vem som har öppnat patientens foton.
+       image_access_log är stängd för klienten; my_journal_access() lämnar
+       ut raderna för den inloggades EGNA ärenden, med granskarens namn och
+       titel -- aldrig granskarens id, aldrig någon annans ärenden.
+       Granskaren öppnar ett foto i ett av patientens ärenden (en loggrad,
+       som i granskarvyn), och en rad läggs till för ett konto som tagits
+       bort. Sedan frågar patienten, granskaren och en annan användare.
+       Den skarpa databasen har historik -- granskaren har öppnat fotot
+       förut -- så kontrollen räknar före och efter och väntar exakt en ny
+       rad av varje slag, aldrig ett exakt antal.
+       Allt rullas tillbaka: resultaten bärs ut i variabler, som inte
+       rullas tillbaka med transaktionen.
+   --------------------------------------------------------------------- */
+RESET ROLE;
+DO $$
+DECLARE
+  _patient   uuid := (SELECT patient FROM _aktorer);
+  _granskare uuid := (SELECT granskare FROM _aktorer);
+  _annan     uuid := (SELECT privatkopare FROM _aktorer);
+  _foto      uuid;
+  _arende    uuid;
+  _namn      text := (SELECT d.name FROM public.dermatologists d WHERE d.user_id = (SELECT granskare FROM _aktorer));
+  _egen      text := 'FEL: kördes inte';
+  _borttagen text := 'FEL: kördes inte';
+  _gransk    text := 'FEL: kördes inte';
+  _ovrig     text := 'FEL: kördes inte';
+  _n         int;
+  _m         int;
+  _fore_namn int;
+  _fore_bort int;
+BEGIN
+  SELECT ri.id, ri.lesion_review_id INTO _foto, _arende
+    FROM public.review_images ri
+    JOIN public.lesion_reviews lr ON lr.id = ri.lesion_review_id
+   WHERE lr.user_id = _patient AND lr.reviewer_id = _granskare
+   LIMIT 1;
+  IF _foto IS NULL THEN
+    INSERT INTO _resultat VALUES (43,'journalens åtkomstlogg','ÖVERHOPPAD -- inget foto i ett ärende som granskaren har');
+    RETURN;
+  END IF;
+  BEGIN
+    -- Före: det patienten redan ser i ärendet.
+    PERFORM set_config('request.jwt.claims', json_build_object('sub',_patient)::text, true);
+    SELECT count(*) FILTER (WHERE a.viewer_name = _namn AND NOT a.viewer_removed),
+           count(*) FILTER (WHERE a.viewer_removed AND a.viewer_name IS NULL)
+      INTO _fore_namn, _fore_bort
+      FROM public.my_journal_access() a
+     WHERE a.lesion_review_id = _arende;
+
+    -- Ett konto som tagits bort: loggraden finns kvar utan koppling.
+    INSERT INTO public.image_access_log (lesion_review_id, viewer_id, viewed_at)
+    VALUES (_arende, NULL, now() - interval '1 day');
+
+    SET ROLE authenticated;
+    PERFORM set_config('request.jwt.claims', json_build_object('sub',_granskare,'aal','aal2')::text, true);
+    PERFORM public.request_review_image(_foto);
+
+    PERFORM set_config('request.jwt.claims', json_build_object('sub',_patient)::text, true);
+    SELECT count(*) INTO _n FROM public.my_journal_access() a
+     WHERE a.lesion_review_id = _arende AND a.viewer_name = _namn AND a.viewed_at IS NOT NULL AND NOT a.viewer_removed;
+    _egen := CASE WHEN _n = _fore_namn + 1
+                  THEN 'OK: '||_n||CASE WHEN _n = 1 THEN ' öppning' ELSE ' öppningar' END||' med namn, en ny'
+                  ELSE 'FEL: '||_fore_namn||' före, '||_n||' efter' END;
+    SELECT count(*) INTO _m FROM public.my_journal_access() a
+     WHERE a.lesion_review_id = _arende AND a.viewer_removed AND a.viewer_name IS NULL;
+    _borttagen := CASE WHEN _m = _fore_bort + 1 THEN 'OK' ELSE 'FEL: '||_fore_bort||' före, '||_m||' efter' END;
+
+    PERFORM set_config('request.jwt.claims', json_build_object('sub',_granskare,'aal','aal2')::text, true);
+    SELECT count(*) INTO _n FROM public.my_journal_access() a WHERE a.lesion_review_id = _arende;
+    _gransk := CASE WHEN _n = 0 THEN 'OK' ELSE 'FEL: '||_n||' rader' END;
+
+    PERFORM set_config('request.jwt.claims', json_build_object('sub',_annan)::text, true);
+    SELECT count(*) INTO _n FROM public.my_journal_access() a WHERE a.lesion_review_id = _arende;
+    _ovrig := CASE WHEN _n = 0 THEN 'OK' ELSE 'FEL: '||_n||' rader' END;
+
+    RAISE EXCEPTION 'rulla_tillbaka';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM <> 'rulla_tillbaka' THEN
+      _egen := 'FEL: '||SQLERRM;
+    END IF;
+  END;
+  INSERT INTO _resultat VALUES
+    (43,'patienten ser att granskaren öppnat fotot, med namn', _egen),
+    (43,'ett borttaget konto syns som borttaget, utan namn', _borttagen),
+    (43,'granskaren får inga rader ur patientens logg', _gransk),
+    (43,'en annan användare får inga rader ur patientens logg', _ovrig),
+    (43,'anon kan inte anropa my_journal_access',
+      CASE WHEN NOT has_function_privilege('anon', 'public.my_journal_access()', 'EXECUTE') THEN 'OK: nekad'
+           ELSE 'FEL: anon får anropa' END);
+EXCEPTION WHEN undefined_function THEN
+  INSERT INTO _resultat VALUES (43,'journalens åtkomstlogg','FEL: my_journal_access() finns inte');
+END $$;
+
 SELECT n, kontroll, utfall,
        CASE WHEN utfall LIKE 'FEL%' THEN '<<<<<' ELSE '' END AS flagga
   FROM _resultat ORDER BY n, kontroll;

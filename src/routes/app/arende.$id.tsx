@@ -16,11 +16,12 @@ import { TimelineView } from "@/arenden/tidslinje-vy";
 import { CaseNotFound, LoadError, Loading } from "@/arenden/tillstand";
 import type { CaseRecord, CaseSummary, Reviewer } from "@/arenden/typer";
 import { retakeInstruction, statusPill } from "@/arenden/utfall";
+import { JournalButton } from "@/journal/knapp";
 
 // Ärendet: en kontroll av en fläck (ritning v2, 4.2 och steg 3.4). Överst det
 // som gäller nu -- brevet, instruktionerna för nya bilder eller klockan --
-// sedan tidslinjen, fotona, patientens svar och tidigare kontroller av samma
-// fläck. Vid utskrift står bara brevet kvar.
+// sedan tidslinjen, fotona, patientens svar, tidigare kontroller av samma
+// fläck och journalen som PDF (3.4b). Vid utskrift står bara brevet kvar.
 
 export const Route = createFileRoute("/app/arende/$id")({
   loader: async ({ params, context }) => {
@@ -36,6 +37,7 @@ export const Route = createFileRoute("/app/arende/$id")({
 
 function CasePage() {
   const { record, spot, photos, reviewer, others } = Route.useLoaderData();
+  const { session } = Route.useRouteContext();
   useRefreshWhenVisible();
   const pill = statusPill(record);
 
@@ -89,6 +91,20 @@ function CasePage() {
           <OtherChecks others={others} />
         </Block>
       ) : null}
+
+      {/* Journalen som PDF (steg 3.4b): samma innehåll som sidan, och vem som
+          har öppnat fotona. jsPDF hämtas först vid tryck. */}
+      <Block title="Journal">
+        <p className="text-sm text-muted-foreground">
+          Hela kontrollen som en PDF: brevet, fotona, dina svar och vem som har öppnat fotona.
+        </p>
+        <JournalButton
+          label="Ladda ner som PDF"
+          make={async () =>
+            (await import("@/journal/skapa")).makeCaseJournal(record.id, session.user.id, session.user.email ?? "")
+          }
+        />
+      </Block>
     </Page>
   );
 }

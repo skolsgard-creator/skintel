@@ -1,18 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PHOTO_KIND_LABEL } from "./fotosort";
 import type { CasePhoto } from "./typer";
 
 // Fotona i ärendet: tre miniatyrer i rad, tryck för full storlek. Visaren är
 // ett <dialog> med showModal(): webbläsaren sköter fokus, Esc och att sidan
 // bakom inte går att nå -- ingen egen fokusfälla att hålla rätt.
 
-const KIND_LABEL: Record<CasePhoto["kind"], string> = {
-  oversikt: "Översikt",
-  narbild: "Närbild",
-  skala: "Närbild med skala",
-  omtag: "Omtag",
-};
+const KIND_LABEL = PHOTO_KIND_LABEL;
 
 export function Photos({ photos }: { photos: CasePhoto[] }) {
   const [open, setOpen] = useState<CasePhoto | null>(null);
